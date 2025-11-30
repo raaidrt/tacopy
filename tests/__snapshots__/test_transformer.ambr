@@ -1,0 +1,69 @@
+# serializer version: 1
+# name: test_snapshot_factorial_mod_k_transformation
+  '''
+  def factorial_mod_k(acc: int, n: int, k: int) -> int:
+      _tacopy_UUID_acc = acc
+      _tacopy_UUID_n = n
+      _tacopy_UUID_k = k
+      while True:
+          if _tacopy_UUID_n == 0:
+              return _tacopy_UUID_acc % _tacopy_UUID_k
+          (_tacopy_UUID_acc, _tacopy_UUID_n, _tacopy_UUID_k) = (_tacopy_UUID_acc * _tacopy_UUID_n % _tacopy_UUID_k, _tacopy_UUID_n - 1, _tacopy_UUID_k)
+          continue
+  '''
+# ---
+# name: test_snapshot_factorial_transformation
+  '''
+  def factorial(n: int, acc: int=1) -> int:
+      _tacopy_UUID_n = n
+      _tacopy_UUID_acc = acc
+      while True:
+          if _tacopy_UUID_n == 0:
+              return _tacopy_UUID_acc
+          (_tacopy_UUID_n, _tacopy_UUID_acc) = (_tacopy_UUID_n - 1, _tacopy_UUID_acc * _tacopy_UUID_n)
+          continue
+  '''
+# ---
+# name: test_snapshot_fibonacci_transformation
+  '''
+  def fibonacci_tail(n: int, a: int=0, b: int=1) -> int:
+      _tacopy_UUID_n = n
+      _tacopy_UUID_a = a
+      _tacopy_UUID_b = b
+      while True:
+          if _tacopy_UUID_n == 0:
+              return _tacopy_UUID_a
+          if _tacopy_UUID_n == 1:
+              return _tacopy_UUID_b
+          (_tacopy_UUID_n, _tacopy_UUID_a, _tacopy_UUID_b) = (_tacopy_UUID_n - 1, _tacopy_UUID_b, _tacopy_UUID_a + _tacopy_UUID_b)
+          continue
+  '''
+# ---
+# name: test_snapshot_list_reverse_with_parameter_assignment
+  '''
+  def list_reverse_recursive(lst, acc=None):
+      _tacopy_UUID_lst = lst
+      _tacopy_UUID_acc = acc
+      while True:
+          if _tacopy_UUID_acc is None:
+              _tacopy_UUID_acc = []
+          if not _tacopy_UUID_lst:
+              return _tacopy_UUID_acc
+          (_tacopy_UUID_lst, _tacopy_UUID_acc) = (_tacopy_UUID_lst[1:], [_tacopy_UUID_lst[0]] + _tacopy_UUID_acc)
+          continue
+  '''
+# ---
+# name: test_snapshot_tuple_builder_with_parameter_assignment
+  '''
+  def build_tuple_recursive(n: int, acc=None):
+      _tacopy_UUID_n = n
+      _tacopy_UUID_acc = acc
+      while True:
+          if _tacopy_UUID_acc is None:
+              _tacopy_UUID_acc = ()
+          if _tacopy_UUID_n == 0:
+              return _tacopy_UUID_acc
+          (_tacopy_UUID_n, _tacopy_UUID_acc) = (_tacopy_UUID_n - 1, (_tacopy_UUID_n,) + _tacopy_UUID_acc)
+          continue
+  '''
+# ---
