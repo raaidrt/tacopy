@@ -61,11 +61,11 @@ jobs:
 
       - name: Smoke test (wheel)
         run: |
-          uv run --isolated --no-project --with dist/*.whl python -c "from tacopy import tco; print('Wheel import successful')"
+          uv run --isolated --no-project --with dist/*.whl python -c "from tacopy import tacopy; print('Wheel import successful')"
 
       - name: Smoke test (source distribution)
         run: |
-          uv run --isolated --no-project --with dist/*.tar.gz python -c "from tacopy import tco; print('Source dist import successful')"
+          uv run --isolated --no-project --with dist/*.tar.gz python -c "from tacopy import tacopy; print('Source dist import successful')"
 
       - name: Publish to PyPI
         run: uv publish
