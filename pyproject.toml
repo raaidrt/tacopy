@@ -1,5 +1,5 @@
 [project]
-name = "tacopy"
+name = "tacopy-optimization"
 version = "0.1.0"
 description = "Tail-call optimization decorator for Python - eliminates recursion limits by transforming tail-recursive functions into iterative loops"
 readme = "README.md"
@@ -43,7 +43,7 @@ Documentation = "https://github.com/raaidrt/tacopy/blob/main/README.md"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatchling.build.targets.wheel]
+[tool.hatch.build.targets.wheel]
 packages = ["src/tacopy"]
 
 [dependency-groups]
