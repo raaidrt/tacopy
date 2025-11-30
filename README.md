@@ -243,17 +243,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License.
-
-## Acknowledgments
-
-- Inspired by tail-call optimization in functional programming languages
-- Built with Python's `ast` module for code transformation
-- Uses `pytest` and `syrupy` for testing
-
-## Author
-
-Raaid Tanveer
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 ## See Also
 
