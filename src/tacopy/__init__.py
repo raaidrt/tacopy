@@ -9,7 +9,7 @@ from .validator import validate_tail_recursive, TailRecursionError
 from .transformer import transform_function
 from .unparser import unparse
 
-__all__ = ['tacopy', 'TailRecursionError']
+__all__ = ['tacopy', 'TailRecursionError', 'show_transformed_code']
 
 
 def tacopy(func: Callable) -> Callable:

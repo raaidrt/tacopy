@@ -1,20 +1,31 @@
-"""AST transformer for tail call optimization."""
+"""AST transformer for tail call optimization.
+
+This module implements the core transformation logic that converts tail-recursive
+functions into iterative loops using AST manipulation. The transformation eliminates
+recursion while preserving the function's semantics and behavior.
+"""
 import ast
 import uuid
 from typing import Optional
 
 
 class TailCallTransformer(ast.NodeTransformer):
-    """
-    Transform a tail-recursive function into an iterative loop.
+    """AST transformer that converts tail-recursive functions to iterative loops.
 
-    The transformation converts:
+    This transformer implements the tail-call optimization by:
+    1. Hoisting parameters to uniquely-named temporary variables
+    2. Wrapping the function body in a ``while True`` loop
+    3. Replacing tail-recursive calls with assignments and ``continue`` statements
+
+    The transformation converts::
+
         def func(a, b):
             if base_case:
                 return result
             return func(new_a, new_b)
 
-    Into:
+    Into::
+
         def func(a, b):
             _tacopy_<uuid>_a = a
             _tacopy_<uuid>_b = b
@@ -22,11 +33,30 @@ class TailCallTransformer(ast.NodeTransformer):
                 if base_case:
                     return result
                 _tacopy_<uuid>_a, _tacopy_<uuid>_b = new_a, new_b
+                continue
 
-    We use UUID-based variable names to avoid collisions with existing variables.
+    UUID-based variable names are used to avoid collisions with existing variables
+    in the function scope.
+
+    Attributes:
+        function_name: Name of the function being transformed
+        param_names: List of parameter names extracted from function signature
+        transformed: Flag indicating if transformation was applied
+        var_prefix: Unique prefix for temporary variables (includes UUID)
+
+    Example:
+        >>> transformer = TailCallTransformer("factorial")
+        >>> tree = ast.parse(source_code)
+        >>> new_tree = transformer.visit(tree)
+        >>> assert transformer.transformed
     """
 
     def __init__(self, function_name: str):
+        """Initialize the transformer for a specific function.
+
+        Args:
+            function_name: The name of the function to transform
+        """
         self.function_name = function_name
         self.param_names = []
         self.transformed = False
@@ -34,7 +64,21 @@ class TailCallTransformer(ast.NodeTransformer):
         self.var_prefix = f"_tacopy_{uuid.uuid4().hex[:8]}_"
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
-        """Transform the target function definition."""
+        """Transform the target function definition into a loop-based version.
+
+        This method performs the complete transformation:
+        1. Extracts parameter names from the function signature
+        2. Creates temporary variable initializations for each parameter
+        3. Transforms the function body (replacing tail calls with assignments)
+        4. Wraps the body in a ``while True`` loop
+
+        Args:
+            node: The FunctionDef AST node to transform
+
+        Returns:
+            The transformed FunctionDef node if this is the target function,
+            otherwise returns the node unchanged.
+        """
         if node.name != self.function_name:
             return node
 
@@ -86,11 +130,37 @@ class TailCallTransformer(ast.NodeTransformer):
         return new_node
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AsyncFunctionDef:
-        """Async functions should have been rejected by the validator."""
+        """Handle async function definitions (should be rejected by validator).
+
+        Args:
+            node: The AsyncFunctionDef AST node
+
+        Returns:
+            The node unchanged (validation should prevent this from being called)
+
+        Note:
+            Async functions should be caught by the validator before transformation.
+        """
         return node
 
     def visit_Return(self, node: ast.Return) -> ast.AST:
-        """Transform return statements with tail calls into assignments + continue."""
+        """Transform return statements with tail calls into assignments + continue.
+
+        This is the core of the transformation. When a return statement contains
+        a tail-recursive call, it's converted into:
+        1. An assignment updating all parameter variables
+        2. A ``continue`` statement to restart the loop
+
+        Non-tail returns are left as-is but have parameter references updated.
+
+        Args:
+            node: The Return AST node to transform
+
+        Returns:
+            Either:
+            - A list containing [Assignment, Continue] for tail-recursive calls
+            - The original Return node (with updated references) for other returns
+        """
         if node.value is None:
             return node
 
@@ -151,7 +221,18 @@ class TailCallTransformer(ast.NodeTransformer):
         return self._replace_params_in_return(node)
 
     def _replace_params_in_return(self, node: ast.Return) -> ast.Return:
-        """Replace parameter references with temp variables in non-tail-call returns."""
+        """Replace parameter references with temp variables in non-tail-call returns.
+
+        For return statements that don't contain tail calls, we still need to
+        update all parameter references to use the temporary variables created
+        at the start of the function.
+
+        Args:
+            node: The Return AST node to process
+
+        Returns:
+            The Return node with parameter references replaced
+        """
         if node.value is None:
             return node
 
@@ -171,7 +252,14 @@ class TailCallTransformer(ast.NodeTransformer):
         return ast.Return(value=new_value)
 
     def visit_If(self, node: ast.If) -> ast.If:
-        """Visit if statements and transform their bodies."""
+        """Visit if statements and transform their bodies.
+
+        Args:
+            node: The If AST node to transform
+
+        Returns:
+            The transformed If node with updated conditions and bodies
+        """
         # Replace parameter references in the test condition
         node.test = self._replace_params_in_expr(node.test)
 
@@ -198,12 +286,29 @@ class TailCallTransformer(ast.NodeTransformer):
         return node
 
     def visit_Expr(self, node: ast.Expr) -> ast.Expr:
-        """Visit expression statements and replace parameter references."""
+        """Visit expression statements and replace parameter references.
+
+        Args:
+            node: The Expr AST node to transform
+
+        Returns:
+            The Expr node with parameter references replaced
+        """
         node.value = self._replace_params_in_expr(node.value)
         return node
 
     def visit_Assign(self, node: ast.Assign) -> ast.Assign:
-        """Visit assignment statements and replace parameter references."""
+        """Visit assignment statements and replace parameter references.
+
+        Both the left-hand side (targets) and right-hand side (value) of
+        assignments need parameter references updated to use temporary variables.
+
+        Args:
+            node: The Assign AST node to transform
+
+        Returns:
+            The Assign node with parameter references replaced
+        """
         # Replace parameter references in the value (RHS)
         node.value = self._replace_params_in_expr(node.value)
 
@@ -217,7 +322,17 @@ class TailCallTransformer(ast.NodeTransformer):
         return node
 
     def _replace_params_in_target(self, target: ast.AST) -> ast.AST:
-        """Replace parameter references in assignment targets."""
+        """Replace parameter references in assignment targets.
+
+        When a parameter is assigned to within the function body, we need to
+        redirect that assignment to the temporary variable instead.
+
+        Args:
+            target: The assignment target AST node
+
+        Returns:
+            The target node with parameter references replaced
+        """
         class TargetReplacer(ast.NodeTransformer):
             def __init__(self, param_map):
                 self.param_map = param_map
@@ -232,7 +347,18 @@ class TailCallTransformer(ast.NodeTransformer):
         return replacer.visit(target)
 
     def _replace_params_in_expr(self, expr: ast.AST) -> ast.AST:
-        """Replace all parameter references in an expression with temp variables."""
+        """Replace all parameter references in an expression with temp variables.
+
+        This method is used throughout the transformer to ensure all references
+        to function parameters are updated to use the temporary variables created
+        at the start of the transformed function.
+
+        Args:
+            expr: The expression AST node to process
+
+        Returns:
+            The expression with parameter references replaced
+        """
         class ParamReplacer(ast.NodeTransformer):
             def __init__(self, param_map):
                 self.param_map = param_map
@@ -247,26 +373,54 @@ class TailCallTransformer(ast.NodeTransformer):
         return replacer.visit(expr)
 
     def _is_recursive_call(self, call: ast.Call) -> bool:
-        """Check if a call node is a recursive call to the target function."""
+        """Check if a call node is a recursive call to the target function.
+
+        Args:
+            call: The Call AST node to check
+
+        Returns:
+            True if this is a recursive call, False otherwise
+        """
         if isinstance(call.func, ast.Name) and call.func.id == self.function_name:
             return True
         return False
 
     def _get_temp_name(self, param: str) -> str:
-        """Get the temporary variable name for a parameter."""
+        """Get the temporary variable name for a parameter.
+
+        Args:
+            param: The original parameter name
+
+        Returns:
+            The unique temporary variable name with UUID prefix
+        """
         return f"{self.var_prefix}{param}"
 
 
 def transform_function(tree: ast.AST, function_name: str) -> ast.AST:
-    """
-    Transform a tail-recursive function into an iterative loop.
+    """Transform a tail-recursive function into an iterative loop.
+
+    This is the main entry point for the transformation. It creates a
+    TailCallTransformer instance and applies it to the given AST, then
+    fixes any missing location information in the resulting tree.
 
     Args:
-        tree: The AST of the module containing the function
+        tree: The AST of the module containing the function to transform
         function_name: The name of the function to transform
 
     Returns:
-        The transformed AST
+        The transformed AST with the function converted to use iteration
+
+    Example:
+        >>> source = '''
+        ... def factorial(n, acc=1):
+        ...     if n == 0:
+        ...         return acc
+        ...     return factorial(n - 1, acc * n)
+        ... '''
+        >>> tree = ast.parse(source)
+        >>> new_tree = transform_function(tree, "factorial")
+        >>> # new_tree now contains the iterative version
     """
     transformer = TailCallTransformer(function_name)
     new_tree = transformer.visit(tree)

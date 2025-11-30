@@ -1,8 +1,9 @@
 [project]
 name = "tacopy"
 version = "0.1.0"
-description = "Add your description here"
+description = "Tail-call optimization decorator for Python - eliminates recursion limits by transforming tail-recursive functions into iterative loops"
 readme = "README.md"
+license = { text = "GPL-3.0-or-later" }
 authors = [
     { name = "Raaid Tanveer", email = "raaidraiyantanveer@gmail.com" }
 ]
@@ -10,10 +11,39 @@ requires-python = ">=3.10"
 dependencies = [
     "astpretty>=3.0.0",
 ]
+keywords = [
+    "tail-call-optimization",
+    "recursion",
+    "functional-programming",
+    "ast",
+    "decorator",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Code Generators",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/raaidrt/tacopy"
+Repository = "https://github.com/raaidrt/tacopy"
+Issues = "https://github.com/raaidrt/tacopy/issues"
+Documentation = "https://github.com/raaidrt/tacopy/blob/main/README.md"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatchling.build.targets.wheel]
+packages = ["src/tacopy"]
 
 [dependency-groups]
 dev = [

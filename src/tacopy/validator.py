@@ -1,31 +1,70 @@
-"""Validator for tail-recursive functions."""
+"""Validator for tail-recursive functions.
+
+This module provides validation logic to ensure that functions decorated with
+@tacopy are properly tail-recursive. It uses AST traversal to detect non-tail
+recursive calls and raises TailRecursionError for invalid functions.
+"""
 import ast
 from typing import Callable
 
 
 class TailRecursionError(Exception):
-    """Raised when a function is not properly tail-recursive."""
+    """Exception raised when a function is not properly tail-recursive.
+
+    This exception is raised in the following scenarios:
+    - A recursive call is not in tail position (e.g., further operations after the call)
+    - An async function is decorated with @tacopy (not supported)
+    - The decorator is applied to a nested function (not supported)
+
+    Attributes:
+        message: Detailed explanation of why the function is not tail-recursive
+    """
     pass
 
 
 class TailRecursionValidator(ast.NodeVisitor):
-    """
-    Validates that all recursive calls in a function are in tail position.
+    """AST visitor that validates tail-recursive functions.
 
-    A call is in tail position if:
-    1. It's the direct return value of a return statement
-    2. It's in the test/body/orelse of an if expression that's being returned
-    3. It's not nested in any other expression (like arithmetic, function calls, etc.)
+    This validator traverses the AST of a function to ensure all recursive calls
+    are in tail position. A call is in tail position if it's the final operation
+    before returning - no further computation should occur after the recursive call.
+
+    Valid tail positions:
+    1. Direct return value: ``return func(args)``
+    2. Within if-expression branches: ``return x if cond else func(args)``
+    3. NOT in operations: ``return 1 + func(args)`` is invalid
+
+    Attributes:
+        function_name: The name of the function being validated
+        errors: List of error messages for non-tail-recursive calls found
+        in_return: Flag indicating if currently analyzing a return statement
+        return_depth: Nesting depth within return expression (for debugging)
+
+    Raises:
+        TailRecursionError: If the function is not properly tail-recursive
     """
 
     def __init__(self, function_name: str):
+        """Initialize the validator for a specific function.
+
+        Args:
+            function_name: The name of the function to validate
+        """
         self.function_name = function_name
         self.errors = []
         self.in_return = False
         self.return_depth = 0
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
-        """Visit function definition, only analyze the target function."""
+        """Visit function definition, only analyze the target function.
+
+        Args:
+            node: The FunctionDef AST node to visit
+
+        Note:
+            Nested function definitions are intentionally not visited to avoid
+            false positives from inner functions.
+        """
         if node.name == self.function_name:
             # Visit the function body
             for stmt in node.body:
@@ -33,7 +72,14 @@ class TailRecursionValidator(ast.NodeVisitor):
         # Don't visit nested function definitions
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
-        """Async functions are not supported for tail recursion optimization."""
+        """Reject async functions as they are not supported.
+
+        Args:
+            node: The AsyncFunctionDef AST node to visit
+
+        Raises:
+            TailRecursionError: Always raised for async functions
+        """
         if node.name == self.function_name:
             raise TailRecursionError(
                 f"Async function '{self.function_name}' cannot use tail recursion optimization. "
@@ -41,7 +87,15 @@ class TailRecursionValidator(ast.NodeVisitor):
             )
 
     def visit_Return(self, node: ast.Return):
-        """Visit return statement and check if the value is tail-recursive."""
+        """Visit return statement and validate tail-recursiveness.
+
+        Args:
+            node: The Return AST node to visit
+
+        Note:
+            This method sets the in_return flag and delegates to _check_tail_position
+            to recursively check if any recursive calls are in valid tail positions.
+        """
         if node.value is None:
             return
 
@@ -51,12 +105,19 @@ class TailRecursionValidator(ast.NodeVisitor):
         self.in_return = False
 
     def _check_tail_position(self, node: ast.AST, is_tail: bool = False):
-        """
-        Check if a node is in tail position.
+        """Recursively check if a node is in tail position.
+
+        This method traverses the AST node and its children to identify recursive
+        calls and verify they are in tail position. Operations that break tail
+        position (arithmetic, comparisons, etc.) are tracked.
 
         Args:
             node: The AST node to check
             is_tail: Whether this node is currently in tail position
+
+        Note:
+            Tail position is preserved through if-expressions but broken by
+            operations like arithmetic, boolean logic, comparisons, etc.
         """
         if isinstance(node, ast.Call):
             self._check_call(node, is_tail)
@@ -96,12 +157,19 @@ class TailRecursionValidator(ast.NodeVisitor):
         # For other node types (constants, names, etc.), no recursive calls are possible
 
     def _check_call(self, node: ast.Call, is_tail: bool):
-        """
-        Check if a function call is a recursive call and if it's in tail position.
+        """Check if a function call is recursive and validate tail position.
+
+        This method identifies recursive calls (calls to the function being validated)
+        and ensures they appear only in tail position. Non-tail recursive calls are
+        recorded as errors.
 
         Args:
-            node: The Call node
+            node: The Call AST node to check
             is_tail: Whether this call is in tail position
+
+        Note:
+            Arguments to any function call (recursive or not) are always checked
+            with is_tail=False since they cannot be in tail position.
         """
         # Check if this is a recursive call
         is_recursive = False
@@ -128,14 +196,33 @@ class TailRecursionValidator(ast.NodeVisitor):
 
 
 def validate_tail_recursive(func: Callable) -> None:
-    """
-    Validate that a function is tail-recursive.
+    """Validate that a function is properly tail-recursive.
+
+    This function parses the source code of the given function and uses
+    TailRecursionValidator to check that all recursive calls are in tail position.
+    If any non-tail recursive calls are found, or if the function is async,
+    a TailRecursionError is raised with detailed error messages.
 
     Args:
-        func: The function to validate
+        func: The function to validate. Must have accessible source code
+              via inspect.getsource().
 
     Raises:
-        TailRecursionError: If the function is not properly tail-recursive
+        TailRecursionError: If the function is not properly tail-recursive,
+                           is an async function, or has any non-tail recursive calls.
+
+    Example:
+        >>> def factorial(n, acc=1):
+        ...     if n == 0:
+        ...         return acc
+        ...     return factorial(n - 1, acc * n)  # Valid tail call
+        >>> validate_tail_recursive(factorial)  # Passes
+
+        >>> def bad_factorial(n):
+        ...     if n == 0:
+        ...         return 1
+        ...     return n * bad_factorial(n - 1)  # Invalid - not tail position
+        >>> validate_tail_recursive(bad_factorial)  # Raises TailRecursionError
     """
     import inspect
     import textwrap
