@@ -10,6 +10,7 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "astpretty>=3.0.0",
+    "tqdm>=4.67.1",
 ]
 keywords = [
     "tail-call-optimization",
