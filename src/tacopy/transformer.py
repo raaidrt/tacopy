@@ -4,9 +4,9 @@ This module implements the core transformation logic that converts tail-recursiv
 functions into iterative loops using AST manipulation. The transformation eliminates
 recursion while preserving the function's semantics and behavior.
 """
+
 import ast
 import uuid
-from typing import Optional
 
 
 class TailCallTransformer(ast.NodeTransformer):
@@ -87,7 +87,7 @@ class TailCallTransformer(ast.NodeTransformer):
 
         # Create variable initializations at the start of the function
         # _tacopy_<uuid>_param = param
-        init_stmts = []
+        init_stmts: list[ast.stmt] = []
         for param in self.param_names:
             temp_name = self._get_temp_name(param)
             init_stmts.append(
@@ -98,7 +98,7 @@ class TailCallTransformer(ast.NodeTransformer):
             )
 
         # Transform the function body
-        transformed_body = []
+        transformed_body: list[ast.stmt] = []
         for stmt in node.body:
             transformed_stmt = self.visit(stmt)
             if isinstance(transformed_stmt, list):
@@ -107,14 +107,10 @@ class TailCallTransformer(ast.NodeTransformer):
                 transformed_body.append(transformed_stmt)
 
         # Wrap the transformed body in a while True loop
-        while_loop = ast.While(
-            test=ast.Constant(value=True),
-            body=transformed_body,
-            orelse=[]
-        )
+        while_loop = ast.While(test=ast.Constant(value=True), body=transformed_body, orelse=[])
 
         # Combine: initializations + while loop
-        new_body = init_stmts + [while_loop]
+        new_body: list[ast.stmt] = init_stmts + [while_loop]
 
         # Create the transformed function
         new_node = ast.FunctionDef(
@@ -196,7 +192,10 @@ class TailCallTransformer(ast.NodeTransformer):
                 values = reordered_values
 
             # Replace parameter references in the values with temp variables
-            replaced_values = [self._replace_params_in_expr(val) for val in values]
+            replaced_values: list[ast.expr] = [
+                self._replace_params_in_expr(val)
+                for val in values  # type: ignore[misc]
+            ]
 
             assignment = ast.Assign(
                 targets=[
@@ -215,7 +214,7 @@ class TailCallTransformer(ast.NodeTransformer):
             continue_stmt = ast.Continue()
 
             # Return both statements as a list
-            return [assignment, continue_stmt]
+            return [assignment, continue_stmt]  # type: ignore[return-value]
 
         # Not a tail call, return as-is (but replace parameter references)
         return self._replace_params_in_return(node)
@@ -240,10 +239,10 @@ class TailCallTransformer(ast.NodeTransformer):
             def __init__(self, param_map):
                 self.param_map = param_map
 
-            def visit_Name(self, name_node: ast.Name) -> ast.Name:
-                if name_node.id in self.param_map:
-                    return ast.Name(id=self.param_map[name_node.id], ctx=name_node.ctx)
-                return name_node
+            def visit_Name(self, node: ast.Name) -> ast.Name:
+                if node.id in self.param_map:
+                    return ast.Name(id=self.param_map[node.id], ctx=node.ctx)
+                return node
 
         param_map = {param: self._get_temp_name(param) for param in self.param_names}
         replacer = ParamReplacer(param_map)
@@ -261,7 +260,7 @@ class TailCallTransformer(ast.NodeTransformer):
             The transformed If node with updated conditions and bodies
         """
         # Replace parameter references in the test condition
-        node.test = self._replace_params_in_expr(node.test)
+        node.test = self._replace_params_in_expr(node.test)  # type: ignore[assignment]
 
         # Transform body
         new_body = []
@@ -294,7 +293,7 @@ class TailCallTransformer(ast.NodeTransformer):
         Returns:
             The Expr node with parameter references replaced
         """
-        node.value = self._replace_params_in_expr(node.value)
+        node.value = self._replace_params_in_expr(node.value)  # type: ignore[assignment]
         return node
 
     def visit_Assign(self, node: ast.Assign) -> ast.Assign:
@@ -310,13 +309,13 @@ class TailCallTransformer(ast.NodeTransformer):
             The Assign node with parameter references replaced
         """
         # Replace parameter references in the value (RHS)
-        node.value = self._replace_params_in_expr(node.value)
+        node.value = self._replace_params_in_expr(node.value)  # type: ignore[assignment]
 
         # Replace parameter references in the targets (LHS)
         # If assigning to a parameter, we need to assign to the temp variable instead
-        new_targets = []
+        new_targets: list[ast.expr] = []
         for target in node.targets:
-            new_targets.append(self._replace_params_in_target(target))
+            new_targets.append(self._replace_params_in_target(target))  # type: ignore[arg-type]
         node.targets = new_targets
 
         return node
@@ -333,14 +332,15 @@ class TailCallTransformer(ast.NodeTransformer):
         Returns:
             The target node with parameter references replaced
         """
+
         class TargetReplacer(ast.NodeTransformer):
             def __init__(self, param_map):
                 self.param_map = param_map
 
-            def visit_Name(self, name_node: ast.Name) -> ast.Name:
-                if name_node.id in self.param_map:
-                    return ast.Name(id=self.param_map[name_node.id], ctx=name_node.ctx)
-                return name_node
+            def visit_Name(self, node: ast.Name) -> ast.Name:
+                if node.id in self.param_map:
+                    return ast.Name(id=self.param_map[node.id], ctx=node.ctx)
+                return node
 
         param_map = {param: self._get_temp_name(param) for param in self.param_names}
         replacer = TargetReplacer(param_map)
@@ -359,14 +359,15 @@ class TailCallTransformer(ast.NodeTransformer):
         Returns:
             The expression with parameter references replaced
         """
+
         class ParamReplacer(ast.NodeTransformer):
             def __init__(self, param_map):
                 self.param_map = param_map
 
-            def visit_Name(self, name_node: ast.Name) -> ast.Name:
-                if name_node.id in self.param_map:
-                    return ast.Name(id=self.param_map[name_node.id], ctx=name_node.ctx)
-                return name_node
+            def visit_Name(self, node: ast.Name) -> ast.Name:
+                if node.id in self.param_map:
+                    return ast.Name(id=self.param_map[node.id], ctx=node.ctx)
+                return node
 
         param_map = {param: self._get_temp_name(param) for param in self.param_names}
         replacer = ParamReplacer(param_map)

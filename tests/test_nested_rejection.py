@@ -4,13 +4,16 @@ Test that @tacopy correctly rejects nested functions.
 The @tacopy decorator can only be applied to module-level functions,
 not to functions nested inside other functions.
 """
+
 import pytest
-from tacopy import tacopy, TailRecursionError
+
+from tacopy import TailRecursionError, tacopy
 
 
 def test_nested_decorator_rejected():
     """Test that @tacopy on a nested function raises TailRecursionError."""
     with pytest.raises(TailRecursionError) as exc_info:
+
         def outer(n: int) -> int:
             @tacopy  # This should raise an error
             def inner(m: int) -> int:
@@ -30,6 +33,7 @@ def test_nested_decorator_rejected():
 
 def test_nested_in_outer_function_rejected():
     """Test that nested function inside a regular function is rejected."""
+
     def outer_regular_function():
         @tacopy  # Should raise error - nested inside outer_regular_function
         def nested_tail_recursive(n: int, acc: int = 0) -> int:
@@ -47,6 +51,7 @@ def test_nested_in_outer_function_rejected():
 
 def test_error_message_includes_function_name():
     """Test that error message includes the nested function's name."""
+
     def container():
         @tacopy
         def my_special_function(n: int) -> int:
@@ -67,7 +72,7 @@ def test_error_message_includes_function_name():
 def outer_with_lambda(n: int, acc: int = 0) -> int:
     """Tail-recursive function that uses a lambda (not decorated with @tacopy)."""
     # Lambda is fine (not decorated with @tacopy)
-    helper = lambda x: x * 2
+    helper = lambda x: x * 2  # noqa: E731
 
     if n == 0:
         return acc

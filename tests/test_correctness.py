@@ -7,13 +7,13 @@ Each test creates two versions of a function:
 
 Both are tested with the same inputs to ensure identical results.
 """
-import pytest
-from tacopy import tacopy
 
+from tacopy import tacopy
 
 # ============================================================================
 # Module-level function definitions (to avoid nested function rejection)
 # ============================================================================
+
 
 # Factorial functions
 def factorial_iterative(n: int, acc: int = 1) -> int:
@@ -237,7 +237,7 @@ def sum_kwargs_iterative(n: int, acc: int = 0) -> int:
 def sum_kwargs_recursive(n: int, acc: int = 0) -> int:
     if n == 0:
         return acc
-    return sum_kwargs_recursive(n=n-1, acc=acc+n)
+    return sum_kwargs_recursive(n=n - 1, acc=acc + n)
 
 
 # Mixed args functions
@@ -462,6 +462,7 @@ def build_tuple_recursive(n: int, acc=None):
 # Test classes
 # ============================================================================
 
+
 class TestBasicFactorial:
     """Test factorial computation."""
 
@@ -470,16 +471,16 @@ class TestBasicFactorial:
         # Test various inputs
         test_cases = [0, 1, 2, 5, 10, 20, 100, 500]
         for n in test_cases:
-            assert factorial_iterative(n) == factorial_recursive(n), \
-                f"Mismatch for n={n}"
+            assert factorial_iterative(n) == factorial_recursive(n), f"Mismatch for n={n}"
 
     def test_factorial_with_non_default_accumulator(self):
         """Test factorial with custom initial accumulator."""
         # Test with different starting accumulators
         test_cases = [(5, 1), (5, 2), (10, 3), (0, 999)]
         for n, acc in test_cases:
-            assert factorial_iterative(n, acc) == factorial_recursive(n, acc), \
+            assert factorial_iterative(n, acc) == factorial_recursive(n, acc), (
                 f"Mismatch for n={n}, acc={acc}"
+            )
 
 
 class TestFactorialModK:
@@ -500,8 +501,7 @@ class TestFactorialModK:
         for acc, n, k in test_cases:
             result_iter = factorial_mod_k_iterative(acc, n, k)
             result_rec = factorial_mod_k_recursive(acc, n, k)
-            assert result_iter == result_rec, \
-                f"Mismatch for acc={acc}, n={n}, k={k}"
+            assert result_iter == result_rec, f"Mismatch for acc={acc}, n={n}, k={k}"
 
 
 class TestFibonacci:
@@ -512,8 +512,7 @@ class TestFibonacci:
         # Test various inputs
         test_cases = [0, 1, 2, 5, 10, 20, 50, 100, 500, 1000]
         for n in test_cases:
-            assert fibonacci_iterative(n) == fibonacci_recursive(n), \
-                f"Mismatch for n={n}"
+            assert fibonacci_iterative(n) == fibonacci_recursive(n), f"Mismatch for n={n}"
 
     def test_fibonacci_with_custom_start(self):
         """Test fibonacci with custom starting values."""
@@ -525,8 +524,9 @@ class TestFibonacci:
             (5, 5, 10),
         ]
         for n, a, b in test_cases:
-            assert fibonacci_iterative(n, a, b) == fibonacci_recursive(n, a, b), \
+            assert fibonacci_iterative(n, a, b) == fibonacci_recursive(n, a, b), (
                 f"Mismatch for n={n}, a={a}, b={b}"
+            )
 
 
 class TestGCD:
@@ -548,8 +548,7 @@ class TestGCD:
             (0, 5),  # Edge case: gcd(0, 5) = 5
         ]
         for a, b in test_cases:
-            assert gcd_iterative(a, b) == gcd_recursive(a, b), \
-                f"Mismatch for a={a}, b={b}"
+            assert gcd_iterative(a, b) == gcd_recursive(a, b), f"Mismatch for a={a}, b={b}"
 
 
 class TestSumToN:
@@ -560,8 +559,7 @@ class TestSumToN:
         # Test various inputs
         test_cases = [0, 1, 10, 100, 1000, 5000, 10000]
         for n in test_cases:
-            assert sum_to_n_iterative(n) == sum_to_n_recursive(n), \
-                f"Mismatch for n={n}"
+            assert sum_to_n_iterative(n) == sum_to_n_recursive(n), f"Mismatch for n={n}"
 
 
 class TestListOperations:
@@ -579,8 +577,9 @@ class TestListOperations:
             ["a", "b", "c", "d"],
         ]
         for lst in test_cases:
-            assert list_length_iterative(lst) == list_length_recursive(lst), \
+            assert list_length_iterative(lst) == list_length_recursive(lst), (
                 f"Mismatch for list of length {len(lst)}"
+            )
 
     def test_list_sum_correctness(self):
         """Compare tail-recursive list sum with manual version."""
@@ -594,8 +593,7 @@ class TestListOperations:
             [5, -3, 10, -1, 0],
         ]
         for lst in test_cases:
-            assert list_sum_iterative(lst) == list_sum_recursive(lst), \
-                f"Mismatch for list {lst}"
+            assert list_sum_iterative(lst) == list_sum_recursive(lst), f"Mismatch for list {lst}"
 
     def test_list_reverse_correctness(self):
         """Compare tail-recursive list reverse with manual version."""
@@ -608,8 +606,9 @@ class TestListOperations:
             list(range(20)),
         ]
         for lst in test_cases:
-            assert list_reverse_iterative(lst.copy()) == list_reverse_recursive(lst.copy()), \
+            assert list_reverse_iterative(lst.copy()) == list_reverse_recursive(lst.copy()), (
                 f"Mismatch for list {lst}"
+            )
 
 
 class TestPowerFunction:
@@ -628,8 +627,9 @@ class TestPowerFunction:
             (2, 20),
         ]
         for base, exp in test_cases:
-            assert power_iterative(base, exp) == power_recursive(base, exp), \
+            assert power_iterative(base, exp) == power_recursive(base, exp), (
                 f"Mismatch for base={base}, exp={exp}"
+            )
 
 
 class TestCountDown:
@@ -640,8 +640,7 @@ class TestCountDown:
         # Test various inputs
         test_cases = [0, 1, 5, 10, 100, 1000]
         for n in test_cases:
-            assert count_down_iterative(n) == count_down_recursive(n), \
-                f"Mismatch for n={n}"
+            assert count_down_iterative(n) == count_down_recursive(n), f"Mismatch for n={n}"
 
 
 class TestBooleanFunctions:
@@ -652,8 +651,7 @@ class TestBooleanFunctions:
         # Test various inputs
         test_cases = [0, 1, 2, 5, 10, 99, 100, 500, 501]
         for n in test_cases:
-            assert is_even_iterative(n) == is_even_recursive(n), \
-                f"Mismatch for n={n}"
+            assert is_even_iterative(n) == is_even_recursive(n), f"Mismatch for n={n}"
 
     def test_all_positive_correctness(self):
         """Compare tail-recursive all-positive check with manual version."""
@@ -668,8 +666,9 @@ class TestBooleanFunctions:
             [5, 10, 15, 20],
         ]
         for lst in test_cases:
-            assert all_positive_iterative(lst.copy()) == all_positive_recursive(lst.copy()), \
+            assert all_positive_iterative(lst.copy()) == all_positive_recursive(lst.copy()), (
                 f"Mismatch for list {lst}"
+            )
 
 
 class TestFindMax:
@@ -688,8 +687,9 @@ class TestFindMax:
             list(range(50)),
         ]
         for lst in test_cases:
-            assert find_max_iterative(lst.copy()) == find_max_recursive(lst.copy()), \
+            assert find_max_iterative(lst.copy()) == find_max_recursive(lst.copy()), (
                 f"Mismatch for list {lst}"
+            )
 
 
 class TestKeywordArguments:
@@ -700,16 +700,16 @@ class TestKeywordArguments:
         # Test various inputs
         test_cases = [0, 1, 5, 10, 50, 100]
         for n in test_cases:
-            assert sum_kwargs_iterative(n) == sum_kwargs_recursive(n), \
-                f"Mismatch for n={n}"
+            assert sum_kwargs_iterative(n) == sum_kwargs_recursive(n), f"Mismatch for n={n}"
 
     def test_mixed_args_and_kwargs_correctness(self):
         """Test tail recursion with mixed positional and keyword arguments."""
         # Test various inputs
         test_cases = [0, 1, 5, 10, 20]
         for n in test_cases:
-            assert factorial_mixed_iterative(n) == factorial_mixed_recursive(n), \
+            assert factorial_mixed_iterative(n) == factorial_mixed_recursive(n), (
                 f"Mismatch for n={n}"
+            )
 
 
 class TestComplexExpressions:
@@ -720,16 +720,14 @@ class TestComplexExpressions:
         # Test various inputs
         test_cases = [0, 1, 5, 10, 50, 100]
         for n in test_cases:
-            assert sum_of_squares_iterative(n) == sum_of_squares_recursive(n), \
-                f"Mismatch for n={n}"
+            assert sum_of_squares_iterative(n) == sum_of_squares_recursive(n), f"Mismatch for n={n}"
 
     def test_collatz_length_correctness(self):
         """Test tail-recursive Collatz sequence length."""
         # Test various starting values
         test_cases = [1, 2, 3, 5, 10, 27, 100]
         for n in test_cases:
-            assert collatz_length_iterative(n) == collatz_length_recursive(n), \
-                f"Mismatch for n={n}"
+            assert collatz_length_iterative(n) == collatz_length_recursive(n), f"Mismatch for n={n}"
 
 
 class TestDigitOperations:
@@ -740,16 +738,14 @@ class TestDigitOperations:
         # Test various inputs
         test_cases = [0, 1, 9, 10, 123, 456, 9999, 123456789]
         for n in test_cases:
-            assert sum_of_digits_iterative(n) == sum_of_digits_recursive(n), \
-                f"Mismatch for n={n}"
+            assert sum_of_digits_iterative(n) == sum_of_digits_recursive(n), f"Mismatch for n={n}"
 
     def test_digit_count_correctness(self):
         """Test tail-recursive digit counting."""
         # Test various inputs
         test_cases = [0, 1, 9, 10, 99, 100, 999, 1000, 123456]
         for n in test_cases:
-            assert digit_count_iterative(n) == digit_count_recursive(n), \
-                f"Mismatch for n={n}"
+            assert digit_count_iterative(n) == digit_count_recursive(n), f"Mismatch for n={n}"
 
 
 class TestMultipleConditions:
@@ -768,8 +764,9 @@ class TestMultipleConditions:
             list(range(-10, 11)),
         ]
         for lst in test_cases:
-            assert sign_sum_iterative(lst.copy()) == sign_sum_recursive(lst.copy()), \
+            assert sign_sum_iterative(lst.copy()) == sign_sum_recursive(lst.copy()), (
                 f"Mismatch for list {lst}"
+            )
 
 
 class TestDeepRecursion:
@@ -808,8 +805,7 @@ class TestEdgeCases:
         """Test functions handling negative numbers."""
         test_cases = [0, 5, -5, 10, -10]
         for n in test_cases:
-            assert abs_sum_iterative(n) == abs_sum_recursive(n), \
-                f"Mismatch for n={n}"
+            assert abs_sum_iterative(n) == abs_sum_recursive(n), f"Mismatch for n={n}"
 
     def test_string_concatenation(self):
         """Test tail recursion with string operations."""
@@ -821,8 +817,9 @@ class TestEdgeCases:
             ("", 100),
         ]
         for s, n in test_cases:
-            assert repeat_string_iterative(s, n) == repeat_string_recursive(s, n), \
+            assert repeat_string_iterative(s, n) == repeat_string_recursive(s, n), (
                 f"Mismatch for s='{s}', n={n}"
+            )
 
 
 class TestTupleReturns:
@@ -833,5 +830,4 @@ class TestTupleReturns:
         # Test various inputs
         test_cases = [0, 1, 5, 10, 20]
         for n in test_cases:
-            assert build_tuple_iterative(n) == build_tuple_recursive(n), \
-                f"Mismatch for n={n}"
+            assert build_tuple_iterative(n) == build_tuple_recursive(n), f"Mismatch for n={n}"

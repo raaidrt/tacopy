@@ -1,12 +1,13 @@
 """End-to-end integration tests for the tacopy decorator."""
-import pytest
-import sys
-from tacopy import tacopy, TailRecursionError
 
+import pytest
+
+from tacopy import TailRecursionError, tacopy
 
 # ============================================================================
 # Module-level function definitions (to avoid nested function rejection)
 # ============================================================================
+
 
 # Factorial functions
 @tacopy
@@ -117,7 +118,7 @@ def count_down(n: int) -> int:
 def sum_with_kwargs(n: int, acc: int = 0) -> int:
     if n == 0:
         return acc
-    return sum_with_kwargs(n=n-1, acc=acc+n)
+    return sum_with_kwargs(n=n - 1, acc=acc + n)
 
 
 # Mixed args and kwargs
@@ -131,6 +132,7 @@ def mixed_factorial(n: int, acc: int = 1) -> int:
 # ============================================================================
 # Test functions
 # ============================================================================
+
 
 def test_factorial_basic():
     """Test basic factorial with tail recursion."""
@@ -196,6 +198,7 @@ def test_list_length():
 def test_non_tail_recursive_rejected():
     """Test that non-tail-recursive functions are rejected."""
     with pytest.raises(TailRecursionError):
+
         @tacopy
         def bad_factorial(n: int) -> int:
             if n == 0:
@@ -206,6 +209,7 @@ def test_non_tail_recursive_rejected():
 def test_async_function_rejected():
     """Test that async functions are rejected."""
     with pytest.raises(TailRecursionError):
+
         @tacopy
         async def async_func(n: int) -> int:
             if n == 0:
@@ -215,6 +219,7 @@ def test_async_function_rejected():
 
 def test_nested_decorator():
     """Test that nested functions with tacopy decorator work correctly."""
+
     def wrapper():
         # Use outer_factorial inside another function
         return outer_factorial(5)
@@ -236,7 +241,7 @@ def test_multiple_decorated_functions():
 def test_function_metadata_preserved():
     """Test that function metadata is preserved after decoration."""
     assert my_function.__name__ == "my_function"
-    assert "docstring" in my_function.__doc__
+    assert my_function.__doc__ is not None and "docstring" in my_function.__doc__
 
 
 def test_conditional_expression_in_tail_call():

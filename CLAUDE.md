@@ -38,15 +38,27 @@ Do NOT manually activate the virtual environment (`.venv`) - `uv run` handles th
 
 ### Code Style and Linting
 
-When adding linting/formatting tools, use:
-- `ruff` for fast linting and formatting (recommended for modern Python projects)
-- `mypy` for type checking
-- `black` for code formatting (if not using ruff)
+This project uses `ruff` for fast linting and formatting:
 
-Add these as dev dependencies:
-```bash
-uv add --dev ruff mypy
-```
+- **Run linter**: `uv run ruff check .`
+- **Run linter with auto-fix**: `uv run ruff check . --fix`
+- **Check formatting**: `uv run ruff format --check .`
+- **Format code**: `uv run ruff format .`
+- **Run pre-commit hooks**: `uv run pre-commit run --all-files`
+
+Configuration is in [pyproject.toml](pyproject.toml) under `[tool.ruff]`.
+
+### Type Checking
+
+This project uses `pyrefly` (Meta's next-generation type checker) for type checking:
+
+- **Run type checker**: `uv run pyrefly check`
+- **Type checking with verbose output**: `uv run pyrefly check --verbose`
+- **Initialize pyrefly**: `uv run pyrefly init` (already done)
+
+Configuration is in [pyproject.toml](pyproject.toml) under `[tool.pyrefly]`.
+
+**Note**: Type checking in CI is informational and won't block builds, as AST manipulation code can have dynamic patterns that are difficult to type check statically.
 
 ## Project Structure
 
@@ -69,9 +81,11 @@ Version is defined in [pyproject.toml](pyproject.toml). When updating:
 1. **Make changes** to source code in [src/tacopy/](src/tacopy/)
 2. **Write tests** in [tests/](tests/) following existing patterns
 3. **Run tests** with `uv run pytest tests/ -v`
-4. **Build locally** with `uv build` to verify package builds correctly
-5. **Commit changes** with descriptive messages
-6. **CI will run** tests across Python 3.10-3.13 (see [.github/workflows/test.yml](.github/workflows/test.yml))
+4. **Format code** with `uv run ruff format .`
+5. **Check linting** with `uv run ruff check . --fix`
+6. **Build locally** with `uv build` to verify package builds correctly
+7. **Commit changes** - pre-commit hooks will automatically run ruff on staged files
+8. **CI will run** tests, linting, and formatting checks across Python 3.10-3.13 (see [.github/workflows/test.yml](.github/workflows/test.yml))
 
 ## Python Version Support
 
@@ -82,8 +96,9 @@ This project supports Python >=3.10 as specified in [pyproject.toml](pyproject.t
 
 ## Key Files
 
-- [pyproject.toml](pyproject.toml): Package metadata, dependencies, build config
+- [pyproject.toml](pyproject.toml): Package metadata, dependencies, build config, ruff & pyrefly config
 - [uv.lock](uv.lock): Locked dependency versions (commit this!)
+- [.pre-commit-config.yaml](.pre-commit-config.yaml): Pre-commit hooks configuration
 - [src/tacopy/__init__.py](src/tacopy/__init__.py): Package entry point
 - [tests/](tests/): Test suite using pytest and syrupy
 - [.github/workflows/test.yml](.github/workflows/test.yml): CI configuration
@@ -105,12 +120,23 @@ This project supports Python >=3.10 as specified in [pyproject.toml](pyproject.t
 6. **Type hints**: Add type hints to new code (Python 3.10+ syntax)
 7. **Documentation**: Update [README.md](README.md) and docstrings for public APIs
 
+## Pre-commit Hooks
+
+This project uses pre-commit hooks to ensure code quality:
+- Automatically runs on `git commit`
+- Runs ruff linter with auto-fix
+- Runs ruff formatter
+- Install hooks: `uv run pre-commit install` (already done)
+- Run manually: `uv run pre-commit run --all-files`
+
 ## CI/CD
 
 GitHub Actions workflow ([.github/workflows/test.yml](.github/workflows/test.yml)) automatically:
 - Tests on Python 3.10, 3.11, 3.12, 3.13
 - Runs pytest test suite
+- Runs ruff linting and format checks
+- Runs pyrefly type checking (informational, won't block PRs)
 - Builds package with `uv build`
 - Uploads build artifacts
 
-All checks must pass before merging PRs.
+All checks except pyrefly must pass before merging PRs.

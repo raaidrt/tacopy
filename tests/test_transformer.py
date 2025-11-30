@@ -1,6 +1,7 @@
 """Unit tests for the AST transformer."""
+
 import ast
-import pytest
+
 from tacopy.transformer import transform_function
 from tacopy.unparser import unparse
 
@@ -43,7 +44,7 @@ def factorial_mod_k(acc: int, n: int, k: int) -> int:
     assert "continue" in code
 
     # Verify the function can be compiled
-    compile(transformed, "<test>", "exec")
+    compile(transformed, "<test>", "exec")  # type: ignore[call-overload]
 
 
 def test_transform_multiple_base_cases():
@@ -68,7 +69,7 @@ def fibonacci_tail(n: int, a: int = 0, b: int = 1) -> int:
     assert "continue" in code
 
     # Verify compilation
-    compile(transformed, "<test>", "exec")
+    compile(transformed, "<test>", "exec")  # type: ignore[call-overload]
 
 
 def test_unique_variable_names():
@@ -91,7 +92,8 @@ def func(x: int) -> int:
 
     # Extract the UUID parts from the variable names
     import re
-    uuid_pattern = r'_tacopy_([a-f0-9]{8})_'
+
+    uuid_pattern = r"_tacopy_([a-f0-9]{8})_"
 
     uuids1 = re.findall(uuid_pattern, code1)
     uuids2 = re.findall(uuid_pattern, code2)
@@ -154,7 +156,8 @@ def factorial(n: int, acc: int = 1) -> int:
 
     # Replace the UUID with a placeholder for consistent snapshots
     import re
-    code = re.sub(r'_tacopy_[a-f0-9]{8}_', '_tacopy_UUID_', code)
+
+    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
 
     assert code == snapshot
 
@@ -175,7 +178,8 @@ def fibonacci_tail(n: int, a: int = 0, b: int = 1) -> int:
 
     # Replace UUID for consistent snapshots
     import re
-    code = re.sub(r'_tacopy_[a-f0-9]{8}_', '_tacopy_UUID_', code)
+
+    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
 
     assert code == snapshot
 
@@ -194,7 +198,8 @@ def factorial_mod_k(acc: int, n: int, k: int) -> int:
 
     # Replace UUID for consistent snapshots
     import re
-    code = re.sub(r'_tacopy_[a-f0-9]{8}_', '_tacopy_UUID_', code)
+
+    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
 
     assert code == snapshot
 
@@ -215,7 +220,8 @@ def list_reverse_recursive(lst, acc=None):
 
     # Replace UUID for consistent snapshots
     import re
-    code = re.sub(r'_tacopy_[a-f0-9]{8}_', '_tacopy_UUID_', code)
+
+    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
 
     assert code == snapshot
 
@@ -236,6 +242,7 @@ def build_tuple_recursive(n: int, acc=None):
 
     # Replace UUID for consistent snapshots
     import re
-    code = re.sub(r'_tacopy_[a-f0-9]{8}_', '_tacopy_UUID_', code)
+
+    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
 
     assert code == snapshot

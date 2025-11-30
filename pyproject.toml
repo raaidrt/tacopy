@@ -47,6 +47,37 @@ packages = ["src/tacopy"]
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.5.0",
+    "pyrefly>=0.43.1",
     "pytest>=9.0.1",
+    "ruff>=0.14.7",
     "syrupy>=5.0.0",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

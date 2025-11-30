@@ -1,5 +1,7 @@
 """Example usage of the tacopy tail-call optimization decorator."""
+
 import tacopy
+
 
 @tacopy.tacopy
 def factorial_mod_k(acc: int, n: int, k: int) -> int:

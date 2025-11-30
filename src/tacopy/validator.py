@@ -4,8 +4,9 @@ This module provides validation logic to ensure that functions decorated with
 @tacopy are properly tail-recursive. It uses AST traversal to detect non-tail
 recursive calls and raises TailRecursionError for invalid functions.
 """
+
 import ast
-from typing import Callable
+from collections.abc import Callable
 
 
 class TailRecursionError(Exception):
@@ -19,6 +20,7 @@ class TailRecursionError(Exception):
     Attributes:
         message: Detailed explanation of why the function is not tail-recursive
     """
+
     pass
 
 
@@ -145,7 +147,7 @@ class TailRecursionValidator(ast.NodeVisitor):
             for elt in node.elts:
                 self._check_tail_position(elt, is_tail=False)
         elif isinstance(node, ast.Dict):
-            for key, value in zip(node.keys, node.values):
+            for key, value in zip(node.keys, node.values, strict=True):
                 if key:
                     self._check_tail_position(key, is_tail=False)
                 self._check_tail_position(value, is_tail=False)

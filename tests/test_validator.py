@@ -1,10 +1,13 @@
 """Unit tests for the tail recursion validator."""
+
 import pytest
-from tacopy.validator import validate_tail_recursive, TailRecursionError
+
+from tacopy.validator import TailRecursionError, validate_tail_recursive
 
 
 def test_valid_simple_tail_recursion():
     """Test that a simple tail-recursive function is accepted."""
+
     def factorial(n: int, acc: int = 1) -> int:
         if n == 0:
             return acc
@@ -16,6 +19,7 @@ def test_valid_simple_tail_recursion():
 
 def test_valid_tail_recursion_with_multiple_returns():
     """Test that a tail-recursive function with multiple base cases is accepted."""
+
     def fibonacci_tail(n: int, a: int = 0, b: int = 1) -> int:
         if n == 0:
             return a
@@ -29,6 +33,7 @@ def test_valid_tail_recursion_with_multiple_returns():
 
 def test_valid_tail_recursion_with_conditional_expression():
     """Test that tail recursion with conditional expressions is accepted."""
+
     def max_list(lst, current_max=None):
         if not lst:
             return current_max
@@ -42,6 +47,7 @@ def test_valid_tail_recursion_with_conditional_expression():
 
 def test_invalid_not_tail_recursive():
     """Test that a non-tail-recursive function is rejected."""
+
     def factorial(n: int) -> int:
         if n == 0:
             return 1
@@ -55,6 +61,7 @@ def test_invalid_not_tail_recursive():
 
 def test_invalid_recursive_in_arithmetic():
     """Test that recursive calls in arithmetic expressions are rejected."""
+
     def sum_to_n(n: int) -> int:
         if n == 0:
             return 0
@@ -68,6 +75,7 @@ def test_invalid_recursive_in_arithmetic():
 
 def test_invalid_recursive_in_function_call():
     """Test that recursive calls as arguments to other functions are rejected."""
+
     def bad_function(n: int) -> int:
         if n == 0:
             return 0
@@ -81,6 +89,7 @@ def test_invalid_recursive_in_function_call():
 
 def test_async_function_rejected():
     """Test that async functions are rejected."""
+
     async def async_factorial(n: int, acc: int = 1) -> int:
         if n == 0:
             return acc
@@ -95,6 +104,7 @@ def test_async_function_rejected():
 
 def test_valid_with_modulo():
     """Test the example from the design doc."""
+
     def factorial_mod_k(acc: int, n: int, k: int) -> int:
         if n == 0:
             return acc % k
@@ -106,6 +116,7 @@ def test_valid_with_modulo():
 
 def test_non_recursive_function():
     """Test that non-recursive functions are accepted."""
+
     def not_recursive(n: int) -> int:
         return n * 2
 
@@ -115,6 +126,7 @@ def test_non_recursive_function():
 
 def test_mutually_recursive_not_detected():
     """Test that mutually recursive functions are not detected as self-recursive."""
+
     def even(n: int) -> bool:
         if n == 0:
             return True

@@ -3,8 +3,8 @@
 This module provides utilities for converting AST nodes back into Python source code,
 which is useful for debugging transformations and displaying the optimized code.
 """
+
 import ast
-import sys
 
 
 def unparse(tree: ast.AST) -> str:
@@ -29,13 +29,8 @@ def unparse(tree: ast.AST) -> str:
     Note:
         This project requires Python 3.10+, so ``ast.unparse()`` is always available.
     """
-    # Python 3.9+ has ast.unparse built-in
-    if sys.version_info >= (3, 9):
-        return ast.unparse(tree)
-    else:
-        # For older versions, we'd need a third-party library
-        # But since the project requires Python 3.10+, we can use ast.unparse
-        return ast.unparse(tree)
+    # Python 3.10+ has ast.unparse built-in
+    return ast.unparse(tree)
 
 
 def format_ast(tree: ast.AST, indent: int = 2) -> str:

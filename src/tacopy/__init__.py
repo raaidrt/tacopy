@@ -1,18 +1,22 @@
 """Tacopy: Tail-Call Optimization for Python."""
-from typing import Callable
+
 import ast
+import functools
 import inspect
 import textwrap
-import functools
+from collections.abc import Callable
+from typing import TypeVar
 
-from .validator import validate_tail_recursive, TailRecursionError
 from .transformer import transform_function
 from .unparser import unparse
+from .validator import TailRecursionError, validate_tail_recursive
 
-__all__ = ['tacopy', 'TailRecursionError', 'show_transformed_code']
+__all__ = ["tacopy", "TailRecursionError", "show_transformed_code"]
+
+F = TypeVar("F", bound=Callable)
 
 
-def tacopy(func: Callable) -> Callable:
+def tacopy(func: F) -> F:
     """
     Decorator to apply tail-call optimization to a tail-recursive function.
 
@@ -71,7 +75,7 @@ def tacopy(func: Callable) -> Callable:
 
     # Handle closure variables if any
     if func.__code__.co_freevars and func.__closure__:
-        for name, cell in zip(func.__code__.co_freevars, func.__closure__):
+        for name, cell in zip(func.__code__.co_freevars, func.__closure__, strict=True):
             try:
                 namespace[name] = cell.cell_contents
             except ValueError:
@@ -81,16 +85,17 @@ def tacopy(func: Callable) -> Callable:
                 pass
 
     # Compile and execute the transformed code
-    code = compile(tree, inspect.getfile(func), 'exec')
-    exec(code, namespace)
+    # Convert AST to code - compile() needs the AST in Module form
+    code_obj = compile(tree, inspect.getfile(func), "exec")  # type: ignore[call-overload]
+    exec(code_obj, namespace)
 
     # Get the newly defined function
     new_func = namespace[func.__name__]
 
     # Preserve metadata
-    new_func = functools.wraps(func)(new_func)
+    wrapped_func = functools.wraps(func)(new_func)
 
-    return new_func
+    return wrapped_func  # type: ignore[return-value]
 
 
 def _is_nested_function(func: Callable) -> bool:
@@ -108,7 +113,7 @@ def _is_nested_function(func: Callable) -> bool:
     """
     # __qualname__ contains dots for nested functions
     # e.g., "outer.<locals>.inner" for nested, "factorial" for module-level
-    return '<locals>' in func.__qualname__
+    return "<locals>" in func.__qualname__
 
 
 def _remove_tacopy_decorator(tree: ast.AST, function_name: str) -> ast.AST:
@@ -122,6 +127,7 @@ def _remove_tacopy_decorator(tree: ast.AST, function_name: str) -> ast.AST:
     Returns:
         The modified AST
     """
+
     class RemoveTacopyDecorator(ast.NodeTransformer):
         """Remove @tacopy decorator to prevent infinite recursion."""
 
@@ -132,38 +138,39 @@ def _remove_tacopy_decorator(tree: ast.AST, function_name: str) -> ast.AST:
         def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
             if node.name == self.target_name:
                 node.decorator_list = [
-                    d for d in node.decorator_list
-                    if not self._is_tacopy_decorator(d)
+                    d for d in node.decorator_list if not self._is_tacopy_decorator(d)
                 ]
             return node
 
         def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AsyncFunctionDef:
             if node.name == self.target_name:
                 node.decorator_list = [
-                    d for d in node.decorator_list
-                    if not self._is_tacopy_decorator(d)
+                    d for d in node.decorator_list if not self._is_tacopy_decorator(d)
                 ]
             return node
 
         def _is_tacopy_decorator(self, decorator) -> bool:
             """Check if a decorator is @tacopy or @tacopy.tacopy."""
             # @tacopy
-            if isinstance(decorator, ast.Name) and decorator.id == 'tacopy':
+            if isinstance(decorator, ast.Name) and decorator.id == "tacopy":
                 return True
 
             # @tacopy.tacopy
             if isinstance(decorator, ast.Attribute):
-                if decorator.attr == 'tacopy':
-                    if isinstance(decorator.value, ast.Name) and decorator.value.id == 'tacopy':
+                if decorator.attr == "tacopy":
+                    if isinstance(decorator.value, ast.Name) and decorator.value.id == "tacopy":
                         return True
 
             # @tacopy() (call with no arguments)
             if isinstance(decorator, ast.Call):
-                if isinstance(decorator.func, ast.Name) and decorator.func.id == 'tacopy':
+                if isinstance(decorator.func, ast.Name) and decorator.func.id == "tacopy":
                     return True
                 if isinstance(decorator.func, ast.Attribute):
-                    if decorator.func.attr == 'tacopy':
-                        if isinstance(decorator.func.value, ast.Name) and decorator.func.value.id == 'tacopy':
+                    if decorator.func.attr == "tacopy":
+                        if (
+                            isinstance(decorator.func.value, ast.Name)
+                            and decorator.func.value.id == "tacopy"
+                        ):
                             return True
 
             return False

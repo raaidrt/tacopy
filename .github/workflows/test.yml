@@ -38,7 +38,7 @@ jobs:
           uv run pytest tests/ -v --tb=short
 
   lint:
-    name: Lint and Type Check
+    name: Lint and Format Check
     runs-on: ubuntu-latest
 
     steps:
@@ -59,9 +59,17 @@ jobs:
         run: |
           uv sync --all-extras --dev
 
-      - name: Check code formatting (optional)
+      - name: Run ruff linter
         run: |
-          echo "Skipping formatting check - add ruff or black if needed"
+          uv run ruff check .
+
+      - name: Check ruff formatting
+        run: |
+          uv run ruff format --check .
+
+      - name: Run type checking with pyrefly
+        run: |
+          uv run pyrefly check
         continue-on-error: true
 
   build:
