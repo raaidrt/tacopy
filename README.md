@@ -17,10 +17,10 @@ Tacopy is a Python library that provides a decorator to optimize tail-recursive 
 
 ```bash
 # Using uv (recommended for development)
-uv add tacopy
+uv add tacopy-optimization
 
 # Using pip
-pip install tacopy
+pip install tacopy-optimization
 ```
 
 ## Quick Start
