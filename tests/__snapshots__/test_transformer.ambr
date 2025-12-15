@@ -39,6 +39,30 @@
           continue
   '''
 # ---
+# name: test_snapshot_for_inside_while
+  '''
+  def for_in_while(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          i = 0
+          __tacopy_returned_in_while_UUID3 = False
+          while i < 2:
+              __tacopy_returned_in_for_UUID2 = False
+              for j in range(2):
+                  (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+                  __tacopy_returned_in_for_UUID2 = True
+                  break
+              if __tacopy_returned_in_for_UUID2:
+                  __tacopy_returned_in_while_UUID3 = True
+                  break
+              i += 1
+          if __tacopy_returned_in_while_UUID3:
+              continue
+          return 0
+  '''
+# ---
 # name: test_snapshot_list_reverse_with_parameter_assignment
   '''
   def list_reverse_recursive(lst, acc=None):
@@ -110,6 +134,31 @@
           return 0
   '''
 # ---
+# name: test_snapshot_tail_call_in_nested_while_loops
+  '''
+  def nested_while(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          i = 0
+          __tacopy_returned_in_while_UUID2 = False
+          while i < 2:
+              j = 0
+              __tacopy_returned_in_while_UUID3 = False
+              while j < 2:
+                  (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+                  __tacopy_returned_in_while_UUID3 = True
+                  break
+              if __tacopy_returned_in_while_UUID3:
+                  __tacopy_returned_in_while_UUID2 = True
+                  break
+              j += 1
+          if __tacopy_returned_in_while_UUID2:
+              continue
+          return 0
+  '''
+# ---
 # name: test_snapshot_tail_call_in_triple_nested_for_loops
   '''
   def triple_nested(n: int) -> int:
@@ -137,6 +186,24 @@
           return 0
   '''
 # ---
+# name: test_snapshot_tail_call_in_while_loop
+  '''
+  def while_countdown(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          count = 0
+          __tacopy_returned_in_while_UUID2 = False
+          while count < 3:
+              (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+              __tacopy_returned_in_while_UUID2 = True
+              break
+          if __tacopy_returned_in_while_UUID2:
+              continue
+          return 0
+  '''
+# ---
 # name: test_snapshot_tuple_builder_with_parameter_assignment
   '''
   def build_tuple_recursive(n: int, acc=None):
@@ -149,5 +216,29 @@
               return _tacopy_UUID1_acc
           (_tacopy_UUID1_n, _tacopy_UUID1_acc) = (_tacopy_UUID1_n - 1, (_tacopy_UUID1_n,) + _tacopy_UUID1_acc)
           continue
+  '''
+# ---
+# name: test_snapshot_while_inside_for
+  '''
+  def while_in_for(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          __tacopy_returned_in_for_UUID2 = False
+          for i in range(2):
+              j = 0
+              __tacopy_returned_in_while_UUID3 = False
+              while j < 2:
+                  (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+                  __tacopy_returned_in_while_UUID3 = True
+                  break
+              if __tacopy_returned_in_while_UUID3:
+                  __tacopy_returned_in_for_UUID2 = True
+                  break
+              j += 1
+          if __tacopy_returned_in_for_UUID2:
+              continue
+          return 0
   '''
 # ---

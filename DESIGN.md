@@ -351,12 +351,48 @@ def func(n: int) -> int:
 - At the top level (directly inside while True), the flag check triggers `continue`
 - This ensures the while True loop restarts, implementing the tail call correctly
 
-**Edge cases to handle:**
+**While Loop Support:**
 
-- Multiple for loops at the same level (siblings, not nested)
-- For loops with else clauses
-- For loops containing both tail calls and non-tail returns
-- While loops (similar issue, needs similar solution)
+While loops have the exact same issue and solution as for loops:
+
+```python
+def countdown(n: int) -> int:
+    if n <= 0:
+        return 0
+    while n > 0:
+        return countdown(n - 1)  # Tail call in while loop
+    return 0
+```
+
+**Correct transformation:**
+```python
+def countdown(n: int) -> int:
+    _tacopy_UUID1_n = n
+    while True:
+        if _tacopy_UUID1_n <= 0:
+            return 0
+        __tacopy_returned_in_while_UUID2 = False
+        while _tacopy_UUID1_n > 0:
+            (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+            __tacopy_returned_in_while_UUID2 = True
+            break
+        if __tacopy_returned_in_while_UUID2:
+            continue
+        return 0
+```
+
+The implementation uses a single `loop_stack` that tracks both for and while loops, enabling proper handling of:
+- Nested while loops
+- For loops inside while loops
+- While loops inside for loops
+- Complex interleaved nesting (for → while → for)
+
+**Edge cases handled:**
+
+- ✅ Multiple for/while loops at the same level (siblings, not nested)
+- ✅ For/while loops with else clauses
+- ✅ Loops containing both tail calls and non-tail returns
+- ✅ Arbitrary interleaving of for and while loops
 
 #### Decorator Removal
 

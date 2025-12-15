@@ -186,6 +186,84 @@ def loop_multi_tail(n: int) -> int:
     return 1
 
 
+# For loop with mixed tail and non-tail returns
+@tacopy
+def loop_mixed_returns(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(3):
+        if i == 0:
+            return loop_mixed_returns(n - 1)  # tail call
+        elif i == 1:
+            return 42  # non-tail return
+    return 0
+
+
+# While loop with tail call
+@tacopy
+def while_countdown(n: int) -> int:
+    if n <= 0:
+        return 0
+    count = 0
+    while count < 3:
+        return while_countdown(n - 1)
+    return 0
+
+
+# Nested while loops
+@tacopy
+def nested_while_loops(n: int) -> int:
+    if n <= 0:
+        return 0
+    i = 0
+    while i < 2:
+        j = 0
+        while j < 2:
+            return nested_while_loops(n - 1)
+        j += 1
+    return 0
+
+
+# For inside while
+@tacopy
+def for_inside_while(n: int) -> int:
+    if n <= 0:
+        return 0
+    i = 0
+    while i < 2:
+        for _j in range(2):
+            return for_inside_while(n - 1)
+        i += 1
+    return 0
+
+
+# While inside for
+@tacopy
+def while_inside_for(n: int) -> int:
+    if n <= 0:
+        return 0
+    for _i in range(2):
+        j = 0
+        while j < 2:
+            return while_inside_for(n - 1)
+        j += 1
+    return 0
+
+
+# Complex interleaved: for -> while -> for
+@tacopy
+def complex_interleaved(n: int) -> int:
+    if n <= 0:
+        return 0
+    for _i in range(2):
+        j = 0
+        while j < 2:
+            for _k in range(2):
+                return complex_interleaved(n - 1)
+            j += 1
+    return 0
+
+
 # ============================================================================
 # Test functions
 # ============================================================================
@@ -371,3 +449,57 @@ def test_tail_call_in_for_loop_large():
     # This would cause stack overflow without proper optimization
     assert tailing(1000) == 0
     assert nested_loops(500) == 0
+
+
+def test_for_loop_with_mixed_returns():
+    """Test for loop containing both tail calls and non-tail returns."""
+    # With i=0, should tail-recurse with n-1
+    assert loop_mixed_returns(0) == 0
+    assert loop_mixed_returns(1) == 0
+    assert loop_mixed_returns(2) == 0
+    # Should handle this correctly without confusion between return types
+
+
+def test_while_loop_with_tail_call():
+    """Test tail call inside a while loop."""
+    # Should execute first iteration, then tail-recurse
+    assert while_countdown(0) == 0
+    assert while_countdown(1) == 0
+    assert while_countdown(2) == 0
+    assert while_countdown(10) == 0
+
+
+def test_nested_while_loops():
+    """Test tail call inside nested while loops."""
+    assert nested_while_loops(0) == 0
+    assert nested_while_loops(1) == 0
+    assert nested_while_loops(5) == 0
+
+
+def test_for_inside_while():
+    """Test tail call in for loop inside while loop."""
+    assert for_inside_while(0) == 0
+    assert for_inside_while(1) == 0
+    assert for_inside_while(5) == 0
+
+
+def test_while_inside_for():
+    """Test tail call in while loop inside for loop."""
+    assert while_inside_for(0) == 0
+    assert while_inside_for(1) == 0
+    assert while_inside_for(5) == 0
+
+
+def test_complex_interleaved_loops():
+    """Test tail call in complex interleaved for/while/for loops."""
+    assert complex_interleaved(0) == 0
+    assert complex_interleaved(1) == 0
+    assert complex_interleaved(5) == 0
+
+
+def test_loops_large_recursion():
+    """Test that while and interleaved loops handle large recursion depth."""
+    # This would cause stack overflow without proper optimization
+    assert while_countdown(1000) == 0
+    assert for_inside_while(500) == 0
+    assert while_inside_for(500) == 0
