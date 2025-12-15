@@ -1,6 +1,6 @@
 [project]
 name = "tacopy-optimization"
-version = "0.1.0"
+version = "0.1.3"
 description = "Tail-call optimization decorator for Python - eliminates recursion limits by transforming tail-recursive functions into iterative loops"
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }
