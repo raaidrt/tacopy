@@ -62,6 +62,10 @@ class TailCallTransformer(ast.NodeTransformer):
         self.transformed = False
         # Generate a unique identifier for this transformation
         self.var_prefix = f"_tacopy_{uuid.uuid4().hex[:8]}_"
+        # Track nested loops (both for and while) to handle tail calls inside loops correctly
+        # Stack of (loop_type, loop_uuid, loop_flag_name) tuples
+        # loop_type is either "for" or "while"
+        self.loop_stack: list[tuple[str, str, str]] = []
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
         """Transform the target function definition into a loop-based version.
@@ -140,12 +144,13 @@ class TailCallTransformer(ast.NodeTransformer):
         return node
 
     def visit_Return(self, node: ast.Return) -> ast.AST:
-        """Transform return statements with tail calls into assignments + continue.
+        """Transform return statements with tail calls into assignments + continue/break.
 
         This is the core of the transformation. When a return statement contains
         a tail-recursive call, it's converted into:
         1. An assignment updating all parameter variables
-        2. A ``continue`` statement to restart the loop
+        2. If inside a for loop: set flag + break
+        3. If not inside a for loop: continue to restart the while True loop
 
         Non-tail returns are left as-is but have parameter references updated.
 
@@ -154,7 +159,8 @@ class TailCallTransformer(ast.NodeTransformer):
 
         Returns:
             Either:
-            - A list containing [Assignment, Continue] for tail-recursive calls
+            - A list containing [Assignment, Flag_Set, Break] for tail calls in for loops
+            - A list containing [Assignment, Continue] for tail calls outside for loops
             - The original Return node (with updated references) for other returns
         """
         if node.value is None:
@@ -164,7 +170,7 @@ class TailCallTransformer(ast.NodeTransformer):
         if isinstance(node.value, ast.Call) and self._is_recursive_call(node.value):
             # This is a tail recursive call
             # Transform: return func(arg1, arg2, ...)
-            # Into: _tacopy_<uuid>_param1, _tacopy_<uuid>_param2, ... = arg1, arg2, ...; continue
+            # Into assignment + (flag + break if in for loop, else continue)
 
             # Create the assignment
             targets = [self._get_temp_name(param) for param in self.param_names]
@@ -210,11 +216,28 @@ class TailCallTransformer(ast.NodeTransformer):
                 ),
             )
 
-            # Create a continue statement
-            continue_stmt = ast.Continue()
+            # Check if we're inside any loop (for or while)
+            if self.loop_stack:
+                # We're inside a loop, so we need to:
+                # 1. Set the flag to True
+                # 2. Break out of the loop
+                loop_type, loop_uuid, loop_flag_name = self.loop_stack[-1]
 
-            # Return both statements as a list
-            return [assignment, continue_stmt]  # type: ignore[return-value]
+                flag_set = ast.Assign(
+                    targets=[ast.Name(id=loop_flag_name, ctx=ast.Store())],
+                    value=ast.Constant(value=True),
+                )
+
+                break_stmt = ast.Break()
+
+                # Return: assignment, flag_set, break
+                return [assignment, flag_set, break_stmt]  # type: ignore[return-value]
+            else:
+                # We're not inside any loop, use continue as before
+                continue_stmt = ast.Continue()
+
+                # Return both statements as a list
+                return [assignment, continue_stmt]  # type: ignore[return-value]
 
         # Not a tail call, return as-is (but replace parameter references)
         return self._replace_params_in_return(node)
@@ -249,6 +272,178 @@ class TailCallTransformer(ast.NodeTransformer):
         new_value = replacer.visit(node.value)
 
         return ast.Return(value=new_value)
+
+    def visit_For(self, node: ast.For) -> list[ast.stmt] | ast.For:
+        """Visit for loops and handle tail calls inside them correctly.
+
+        When a tail call occurs inside a for loop, we can't use continue because
+        it would only continue the for loop, not the outer while True loop.
+        Instead, we use a flag to track when a tail call happened inside the loop.
+
+        Args:
+            node: The For AST node to transform
+
+        Returns:
+            A list of statements: [flag_init, for_loop, flag_check]
+            or just the transformed For node if at top level of while True
+        """
+        # Generate unique ID for this for loop
+        loop_uuid = uuid.uuid4().hex[:8]
+        loop_flag_name = f"__tacopy_returned_in_for_{loop_uuid}"
+
+        # Create flag initialization: __tacopy_returned_in_for_UUID = False
+        flag_init = ast.Assign(
+            targets=[ast.Name(id=loop_flag_name, ctx=ast.Store())],
+            value=ast.Constant(value=False),
+        )
+
+        # Push this loop onto the stack
+        self.loop_stack.append(("for", loop_uuid, loop_flag_name))
+
+        # Replace parameter references in the loop target and iter
+        node.target = self._replace_params_in_target(node.target)  # type: ignore[assignment]
+        node.iter = self._replace_params_in_expr(node.iter)  # type: ignore[assignment]
+
+        # Transform the body
+        new_body = []
+        for stmt in node.body:
+            result = self.visit(stmt)
+            if isinstance(result, list):
+                new_body.extend(result)
+            else:
+                new_body.append(result)
+        node.body = new_body
+
+        # Transform the orelse
+        new_orelse = []
+        for stmt in node.orelse:
+            result = self.visit(stmt)
+            if isinstance(result, list):
+                new_orelse.extend(result)
+            else:
+                new_orelse.append(result)
+        node.orelse = new_orelse
+
+        # Pop this loop from the stack
+        self.loop_stack.pop()
+
+        # Create flag check after the loop
+        # If we're inside another loop, propagate the flag and break
+        # If we're at top level, continue the while True loop
+        if self.loop_stack:
+            # We're nested inside another loop
+            parent_type, parent_uuid, parent_flag_name = self.loop_stack[-1]
+            # if __tacopy_returned_in_for_UUID:
+            #     __tacopy_returned_in_<parent_type>_PARENT_UUID = True
+            #     break
+            flag_check = ast.If(
+                test=ast.Name(id=loop_flag_name, ctx=ast.Load()),
+                body=[
+                    ast.Assign(
+                        targets=[ast.Name(id=parent_flag_name, ctx=ast.Store())],
+                        value=ast.Constant(value=True),
+                    ),
+                    ast.Break(),
+                ],
+                orelse=[],
+            )
+        else:
+            # We're at the top level (directly inside while True)
+            # if __tacopy_returned_in_for_UUID:
+            #     continue
+            flag_check = ast.If(
+                test=ast.Name(id=loop_flag_name, ctx=ast.Load()),
+                body=[ast.Continue()],
+                orelse=[],
+            )
+
+        # Return list of statements: flag_init, for loop, flag_check
+        return [flag_init, node, flag_check]  # type: ignore[return-value]
+
+    def visit_While(self, node: ast.While) -> list[ast.stmt] | ast.While:
+        """Visit while loops and handle tail calls inside them correctly.
+
+        When a tail call occurs inside a while loop, we can't use continue because
+        it would only continue the while loop, not the outer while True loop.
+        Instead, we use a flag to track when a tail call happened inside the loop.
+
+        Args:
+            node: The While AST node to transform
+
+        Returns:
+            A list of statements: [flag_init, while_loop, flag_check]
+        """
+        # Generate unique ID for this while loop
+        loop_uuid = uuid.uuid4().hex[:8]
+        loop_flag_name = f"__tacopy_returned_in_while_{loop_uuid}"
+
+        # Create flag initialization: __tacopy_returned_in_while_UUID = False
+        flag_init = ast.Assign(
+            targets=[ast.Name(id=loop_flag_name, ctx=ast.Store())],
+            value=ast.Constant(value=False),
+        )
+
+        # Push this loop onto the stack
+        self.loop_stack.append(("while", loop_uuid, loop_flag_name))
+
+        # Replace parameter references in the loop condition
+        node.test = self._replace_params_in_expr(node.test)  # type: ignore[assignment]
+
+        # Transform the body
+        new_body = []
+        for stmt in node.body:
+            result = self.visit(stmt)
+            if isinstance(result, list):
+                new_body.extend(result)
+            else:
+                new_body.append(result)
+        node.body = new_body
+
+        # Transform the orelse
+        new_orelse = []
+        for stmt in node.orelse:
+            result = self.visit(stmt)
+            if isinstance(result, list):
+                new_orelse.extend(result)
+            else:
+                new_orelse.append(result)
+        node.orelse = new_orelse
+
+        # Pop this loop from the stack
+        self.loop_stack.pop()
+
+        # Create flag check after the loop
+        # If we're inside another loop, propagate the flag and break
+        # If we're at top level, continue the while True loop
+        if self.loop_stack:
+            # We're nested inside another loop
+            parent_type, parent_uuid, parent_flag_name = self.loop_stack[-1]
+            # if __tacopy_returned_in_while_UUID:
+            #     __tacopy_returned_in_<parent_type>_PARENT_UUID = True
+            #     break
+            flag_check = ast.If(
+                test=ast.Name(id=loop_flag_name, ctx=ast.Load()),
+                body=[
+                    ast.Assign(
+                        targets=[ast.Name(id=parent_flag_name, ctx=ast.Store())],
+                        value=ast.Constant(value=True),
+                    ),
+                    ast.Break(),
+                ],
+                orelse=[],
+            )
+        else:
+            # We're at the top level (directly inside while True)
+            # if __tacopy_returned_in_while_UUID:
+            #     continue
+            flag_check = ast.If(
+                test=ast.Name(id=loop_flag_name, ctx=ast.Load()),
+                body=[ast.Continue()],
+                orelse=[],
+            )
+
+        # Return list of statements: flag_init, while loop, flag_check
+        return [flag_init, node, flag_check]  # type: ignore[return-value]
 
     def visit_If(self, node: ast.If) -> ast.If:
         """Visit if statements and transform their bodies.

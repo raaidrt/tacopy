@@ -2,68 +2,243 @@
 # name: test_snapshot_factorial_mod_k_transformation
   '''
   def factorial_mod_k(acc: int, n: int, k: int) -> int:
-      _tacopy_UUID_acc = acc
-      _tacopy_UUID_n = n
-      _tacopy_UUID_k = k
+      _tacopy_UUID1_acc = acc
+      _tacopy_UUID1_n = n
+      _tacopy_UUID1_k = k
       while True:
-          if _tacopy_UUID_n == 0:
-              return _tacopy_UUID_acc % _tacopy_UUID_k
-          (_tacopy_UUID_acc, _tacopy_UUID_n, _tacopy_UUID_k) = (_tacopy_UUID_acc * _tacopy_UUID_n % _tacopy_UUID_k, _tacopy_UUID_n - 1, _tacopy_UUID_k)
+          if _tacopy_UUID1_n == 0:
+              return _tacopy_UUID1_acc % _tacopy_UUID1_k
+          (_tacopy_UUID1_acc, _tacopy_UUID1_n, _tacopy_UUID1_k) = (_tacopy_UUID1_acc * _tacopy_UUID1_n % _tacopy_UUID1_k, _tacopy_UUID1_n - 1, _tacopy_UUID1_k)
           continue
   '''
 # ---
 # name: test_snapshot_factorial_transformation
   '''
   def factorial(n: int, acc: int=1) -> int:
-      _tacopy_UUID_n = n
-      _tacopy_UUID_acc = acc
+      _tacopy_UUID1_n = n
+      _tacopy_UUID1_acc = acc
       while True:
-          if _tacopy_UUID_n == 0:
-              return _tacopy_UUID_acc
-          (_tacopy_UUID_n, _tacopy_UUID_acc) = (_tacopy_UUID_n - 1, _tacopy_UUID_acc * _tacopy_UUID_n)
+          if _tacopy_UUID1_n == 0:
+              return _tacopy_UUID1_acc
+          (_tacopy_UUID1_n, _tacopy_UUID1_acc) = (_tacopy_UUID1_n - 1, _tacopy_UUID1_acc * _tacopy_UUID1_n)
           continue
   '''
 # ---
 # name: test_snapshot_fibonacci_transformation
   '''
   def fibonacci_tail(n: int, a: int=0, b: int=1) -> int:
-      _tacopy_UUID_n = n
-      _tacopy_UUID_a = a
-      _tacopy_UUID_b = b
+      _tacopy_UUID1_n = n
+      _tacopy_UUID1_a = a
+      _tacopy_UUID1_b = b
       while True:
-          if _tacopy_UUID_n == 0:
-              return _tacopy_UUID_a
-          if _tacopy_UUID_n == 1:
-              return _tacopy_UUID_b
-          (_tacopy_UUID_n, _tacopy_UUID_a, _tacopy_UUID_b) = (_tacopy_UUID_n - 1, _tacopy_UUID_b, _tacopy_UUID_a + _tacopy_UUID_b)
+          if _tacopy_UUID1_n == 0:
+              return _tacopy_UUID1_a
+          if _tacopy_UUID1_n == 1:
+              return _tacopy_UUID1_b
+          (_tacopy_UUID1_n, _tacopy_UUID1_a, _tacopy_UUID1_b) = (_tacopy_UUID1_n - 1, _tacopy_UUID1_b, _tacopy_UUID1_a + _tacopy_UUID1_b)
           continue
+  '''
+# ---
+# name: test_snapshot_for_inside_while
+  '''
+  def for_in_while(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          i = 0
+          __tacopy_returned_in_while_UUID3 = False
+          while i < 2:
+              __tacopy_returned_in_for_UUID2 = False
+              for j in range(2):
+                  (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+                  __tacopy_returned_in_for_UUID2 = True
+                  break
+              if __tacopy_returned_in_for_UUID2:
+                  __tacopy_returned_in_while_UUID3 = True
+                  break
+              i += 1
+          if __tacopy_returned_in_while_UUID3:
+              continue
+          return 0
   '''
 # ---
 # name: test_snapshot_list_reverse_with_parameter_assignment
   '''
   def list_reverse_recursive(lst, acc=None):
-      _tacopy_UUID_lst = lst
-      _tacopy_UUID_acc = acc
+      _tacopy_UUID1_lst = lst
+      _tacopy_UUID1_acc = acc
       while True:
-          if _tacopy_UUID_acc is None:
-              _tacopy_UUID_acc = []
-          if not _tacopy_UUID_lst:
-              return _tacopy_UUID_acc
-          (_tacopy_UUID_lst, _tacopy_UUID_acc) = (_tacopy_UUID_lst[1:], [_tacopy_UUID_lst[0]] + _tacopy_UUID_acc)
+          if _tacopy_UUID1_acc is None:
+              _tacopy_UUID1_acc = []
+          if not _tacopy_UUID1_lst:
+              return _tacopy_UUID1_acc
+          (_tacopy_UUID1_lst, _tacopy_UUID1_acc) = (_tacopy_UUID1_lst[1:], [_tacopy_UUID1_lst[0]] + _tacopy_UUID1_acc)
           continue
+  '''
+# ---
+# name: test_snapshot_tail_call_in_for_loop
+  '''
+  def tailing(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          __tacopy_returned_in_for_UUID2 = False
+          for i in range(3):
+              (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+              __tacopy_returned_in_for_UUID2 = True
+              break
+          if __tacopy_returned_in_for_UUID2:
+              continue
+          return 0
+  '''
+# ---
+# name: test_snapshot_tail_call_in_for_with_conditional
+  '''
+  def loop_with_cond(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          __tacopy_returned_in_for_UUID2 = False
+          for i in range(5):
+              if i % 2 == 0:
+                  (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+                  __tacopy_returned_in_for_UUID2 = True
+                  break
+          if __tacopy_returned_in_for_UUID2:
+              continue
+          return 1
+  '''
+# ---
+# name: test_snapshot_tail_call_in_nested_for_loops
+  '''
+  def nested_loops(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          __tacopy_returned_in_for_UUID2 = False
+          for i in range(3):
+              __tacopy_returned_in_for_UUID3 = False
+              for j in range(2):
+                  (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+                  __tacopy_returned_in_for_UUID3 = True
+                  break
+              if __tacopy_returned_in_for_UUID3:
+                  __tacopy_returned_in_for_UUID2 = True
+                  break
+          if __tacopy_returned_in_for_UUID2:
+              continue
+          return 0
+  '''
+# ---
+# name: test_snapshot_tail_call_in_nested_while_loops
+  '''
+  def nested_while(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          i = 0
+          __tacopy_returned_in_while_UUID2 = False
+          while i < 2:
+              j = 0
+              __tacopy_returned_in_while_UUID3 = False
+              while j < 2:
+                  (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+                  __tacopy_returned_in_while_UUID3 = True
+                  break
+              if __tacopy_returned_in_while_UUID3:
+                  __tacopy_returned_in_while_UUID2 = True
+                  break
+              j += 1
+          if __tacopy_returned_in_while_UUID2:
+              continue
+          return 0
+  '''
+# ---
+# name: test_snapshot_tail_call_in_triple_nested_for_loops
+  '''
+  def triple_nested(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          __tacopy_returned_in_for_UUID2 = False
+          for i in range(2):
+              __tacopy_returned_in_for_UUID3 = False
+              for j in range(2):
+                  __tacopy_returned_in_for_UUID4 = False
+                  for k in range(2):
+                      (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+                      __tacopy_returned_in_for_UUID4 = True
+                      break
+                  if __tacopy_returned_in_for_UUID4:
+                      __tacopy_returned_in_for_UUID3 = True
+                      break
+              if __tacopy_returned_in_for_UUID3:
+                  __tacopy_returned_in_for_UUID2 = True
+                  break
+          if __tacopy_returned_in_for_UUID2:
+              continue
+          return 0
+  '''
+# ---
+# name: test_snapshot_tail_call_in_while_loop
+  '''
+  def while_countdown(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          count = 0
+          __tacopy_returned_in_while_UUID2 = False
+          while count < 3:
+              (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+              __tacopy_returned_in_while_UUID2 = True
+              break
+          if __tacopy_returned_in_while_UUID2:
+              continue
+          return 0
   '''
 # ---
 # name: test_snapshot_tuple_builder_with_parameter_assignment
   '''
   def build_tuple_recursive(n: int, acc=None):
-      _tacopy_UUID_n = n
-      _tacopy_UUID_acc = acc
+      _tacopy_UUID1_n = n
+      _tacopy_UUID1_acc = acc
       while True:
-          if _tacopy_UUID_acc is None:
-              _tacopy_UUID_acc = ()
-          if _tacopy_UUID_n == 0:
-              return _tacopy_UUID_acc
-          (_tacopy_UUID_n, _tacopy_UUID_acc) = (_tacopy_UUID_n - 1, (_tacopy_UUID_n,) + _tacopy_UUID_acc)
+          if _tacopy_UUID1_acc is None:
+              _tacopy_UUID1_acc = ()
+          if _tacopy_UUID1_n == 0:
+              return _tacopy_UUID1_acc
+          (_tacopy_UUID1_n, _tacopy_UUID1_acc) = (_tacopy_UUID1_n - 1, (_tacopy_UUID1_n,) + _tacopy_UUID1_acc)
           continue
+  '''
+# ---
+# name: test_snapshot_while_inside_for
+  '''
+  def while_in_for(n: int) -> int:
+      _tacopy_UUID1_n = n
+      while True:
+          if _tacopy_UUID1_n <= 0:
+              return 0
+          __tacopy_returned_in_for_UUID2 = False
+          for i in range(2):
+              j = 0
+              __tacopy_returned_in_while_UUID3 = False
+              while j < 2:
+                  (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+                  __tacopy_returned_in_while_UUID3 = True
+                  break
+              if __tacopy_returned_in_while_UUID3:
+                  __tacopy_returned_in_for_UUID2 = True
+                  break
+              j += 1
+          if __tacopy_returned_in_for_UUID2:
+              continue
+          return 0
   '''
 # ---

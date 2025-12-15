@@ -1,9 +1,46 @@
 """Unit tests for the AST transformer."""
 
 import ast
+import re
 
 from tacopy.transformer import transform_function
 from tacopy.unparser import unparse
+
+
+def _normalize_uuids(code: str) -> str:
+    """Replace UUIDs with numbered placeholders for consistent snapshots.
+
+    This ensures each unique UUID gets a unique number (UUID1, UUID2, etc.)
+    so that nested loops with different flags are clearly distinguishable.
+    """
+    # Find all unique UUIDs in order of appearance
+    uuids_found = []
+
+    def get_uuid_number(uuid: str) -> int:
+        if uuid not in uuids_found:
+            uuids_found.append(uuid)
+        return uuids_found.index(uuid) + 1
+
+    # Replace parameter variable UUIDs: _tacopy_XXXXXXXX_
+    def replace_param_uuid(match):
+        uuid = match.group(1)
+        return f"_tacopy_UUID{get_uuid_number(uuid)}_"
+
+    # Replace for loop flag UUIDs: __tacopy_returned_in_for_XXXXXXXX
+    def replace_for_flag_uuid(match):
+        uuid = match.group(1)
+        return f"__tacopy_returned_in_for_UUID{get_uuid_number(uuid)}"
+
+    # Replace while loop flag UUIDs: __tacopy_returned_in_while_XXXXXXXX
+    def replace_while_flag_uuid(match):
+        uuid = match.group(1)
+        return f"__tacopy_returned_in_while_UUID{get_uuid_number(uuid)}"
+
+    code = re.sub(r"_tacopy_([a-f0-9]{8})_", replace_param_uuid, code)
+    code = re.sub(r"__tacopy_returned_in_for_([a-f0-9]{8})", replace_for_flag_uuid, code)
+    code = re.sub(r"__tacopy_returned_in_while_([a-f0-9]{8})", replace_while_flag_uuid, code)
+
+    return code
 
 
 def test_transform_simple_factorial():
@@ -154,10 +191,8 @@ def factorial(n: int, acc: int = 1) -> int:
     transformed = transform_function(tree, "factorial")
     code = unparse(transformed)
 
-    # Replace the UUID with a placeholder for consistent snapshots
-    import re
-
-    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
 
     assert code == snapshot
 
@@ -176,10 +211,8 @@ def fibonacci_tail(n: int, a: int = 0, b: int = 1) -> int:
     transformed = transform_function(tree, "fibonacci_tail")
     code = unparse(transformed)
 
-    # Replace UUID for consistent snapshots
-    import re
-
-    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
 
     assert code == snapshot
 
@@ -196,10 +229,8 @@ def factorial_mod_k(acc: int, n: int, k: int) -> int:
     transformed = transform_function(tree, "factorial_mod_k")
     code = unparse(transformed)
 
-    # Replace UUID for consistent snapshots
-    import re
-
-    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
 
     assert code == snapshot
 
@@ -218,10 +249,8 @@ def list_reverse_recursive(lst, acc=None):
     transformed = transform_function(tree, "list_reverse_recursive")
     code = unparse(transformed)
 
-    # Replace UUID for consistent snapshots
-    import re
-
-    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
 
     assert code == snapshot
 
@@ -240,9 +269,182 @@ def build_tuple_recursive(n: int, acc=None):
     transformed = transform_function(tree, "build_tuple_recursive")
     code = unparse(transformed)
 
-    # Replace UUID for consistent snapshots
-    import re
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
 
-    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    assert code == snapshot
+
+
+def test_snapshot_tail_call_in_for_loop(snapshot):
+    """Snapshot test for tail call inside a for loop."""
+    source = """
+def tailing(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(3):
+        return tailing(n - 1)
+    return 0
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "tailing")
+    code = unparse(transformed)
+
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
+
+    assert code == snapshot
+
+
+def test_snapshot_tail_call_in_nested_for_loops(snapshot):
+    """Snapshot test for tail call inside nested for loops."""
+    source = """
+def nested_loops(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(3):
+        for j in range(2):
+            return nested_loops(n - 1)
+    return 0
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "nested_loops")
+    code = unparse(transformed)
+
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
+
+    assert code == snapshot
+
+
+def test_snapshot_tail_call_in_for_with_conditional(snapshot):
+    """Snapshot test for tail call inside a for loop with conditional."""
+    source = """
+def loop_with_cond(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(5):
+        if i % 2 == 0:
+            return loop_with_cond(n - 1)
+    return 1
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "loop_with_cond")
+    code = unparse(transformed)
+
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
+
+    assert code == snapshot
+
+
+def test_snapshot_tail_call_in_triple_nested_for_loops(snapshot):
+    """Snapshot test for tail call inside triple nested for loops."""
+    source = """
+def triple_nested(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                return triple_nested(n - 1)
+    return 0
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "triple_nested")
+    code = unparse(transformed)
+
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
+
+    assert code == snapshot
+
+
+def test_snapshot_tail_call_in_while_loop(snapshot):
+    """Snapshot test for tail call inside a while loop."""
+    source = """
+def while_countdown(n: int) -> int:
+    if n <= 0:
+        return 0
+    count = 0
+    while count < 3:
+        return while_countdown(n - 1)
+    return 0
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "while_countdown")
+    code = unparse(transformed)
+
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
+
+    assert code == snapshot
+
+
+def test_snapshot_tail_call_in_nested_while_loops(snapshot):
+    """Snapshot test for tail call inside nested while loops."""
+    source = """
+def nested_while(n: int) -> int:
+    if n <= 0:
+        return 0
+    i = 0
+    while i < 2:
+        j = 0
+        while j < 2:
+            return nested_while(n - 1)
+        j += 1
+    return 0
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "nested_while")
+    code = unparse(transformed)
+
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
+
+    assert code == snapshot
+
+
+def test_snapshot_for_inside_while(snapshot):
+    """Snapshot test for for loop inside while loop."""
+    source = """
+def for_in_while(n: int) -> int:
+    if n <= 0:
+        return 0
+    i = 0
+    while i < 2:
+        for j in range(2):
+            return for_in_while(n - 1)
+        i += 1
+    return 0
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "for_in_while")
+    code = unparse(transformed)
+
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
+
+    assert code == snapshot
+
+
+def test_snapshot_while_inside_for(snapshot):
+    """Snapshot test for while loop inside for loop."""
+    source = """
+def while_in_for(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(2):
+        j = 0
+        while j < 2:
+            return while_in_for(n - 1)
+        j += 1
+    return 0
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "while_in_for")
+    code = unparse(transformed)
+
+    # Replace UUIDs with numbered placeholders for consistent snapshots
+    code = _normalize_uuids(code)
 
     assert code == snapshot

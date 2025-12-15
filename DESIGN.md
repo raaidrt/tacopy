@@ -252,6 +252,148 @@ _a, _b = _b, _a + 1   # Both use OLD values
 - **Why:** New AST nodes need line numbers for compilation
 - **Always called** after transformation
 
+#### Handling Nested Loops
+
+**Problem: `continue` inside nested loops**
+
+When a tail call return occurs inside a `for` loop, the naive transformation using `continue` only affects the innermost loop, not the outer `while True` loop. This breaks correctness.
+
+**Example of the bug:**
+```python
+def tailing(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(3):
+        return tailing(n - 1)  # Tail call inside for loop
+    return 0
+```
+
+**Buggy transformation (WRONG):**
+```python
+def tailing(n: int) -> int:
+    _tacopy_UUID_n = n
+    while True:
+        if _tacopy_UUID_n <= 0:
+            return 0
+        for i in range(3):
+            _tacopy_UUID_n = _tacopy_UUID_n - 1
+            continue  # BUG: continues for loop, not while True!
+        return 0
+```
+
+With `n=2`, this produces wrong output:
+- `i=0`: Sets `n=1`, continues to `i=1`
+- `i=1`: Sets `n=0`, continues to `i=2`
+- `i=2`: Sets `n=-1`, exits for loop
+- Returns 0 (WRONG - should have recursed properly)
+
+**Solution: UUID-based for loop flags**
+
+For each `for` loop encountered during transformation:
+1. Generate a unique UUID for that loop
+2. Initialize a flag `__tacopy_returned_in_for_<UUID> = False` before the loop
+3. When transforming a tail call inside the loop:
+   - Set the flag to `True`
+   - Do the parameter assignment
+   - Use `break` (not `continue`) to exit the for loop
+4. After the for loop, check the flag:
+   - If at top level (not nested): `if flag: continue` the while True loop
+   - If nested inside another for loop: `if flag: set_parent_flag = True; break`
+
+**Correct transformation for simple case:**
+```python
+def tailing(n: int) -> int:
+    _tacopy_UUID1_n = n
+    while True:
+        if _tacopy_UUID1_n <= 0:
+            return 0
+        __tacopy_returned_in_for_UUID2 = False
+        for i in range(3):
+            _tacopy_UUID1_n = _tacopy_UUID1_n - 1
+            __tacopy_returned_in_for_UUID2 = True
+            break  # Exit for loop
+        if __tacopy_returned_in_for_UUID2:
+            continue  # Restart while True loop
+        return 0
+```
+
+**Correct transformation for nested loops:**
+```python
+def func(n: int) -> int:
+    _tacopy_UUID1_n = n
+    while True:
+        __tacopy_returned_in_for_UUID2 = False
+        for i in range(3):
+            __tacopy_returned_in_for_UUID3 = False
+            for j in range(2):
+                _tacopy_UUID1_n = _tacopy_UUID1_n - 1
+                __tacopy_returned_in_for_UUID3 = True
+                break  # Exit inner for loop
+            if __tacopy_returned_in_for_UUID3:
+                __tacopy_returned_in_for_UUID2 = True  # Propagate upward
+                break  # Exit outer for loop
+        if __tacopy_returned_in_for_UUID2:
+            continue  # Restart while True loop
+```
+
+**Implementation requirements:**
+
+1. **Track for loop nesting**: Maintain a stack of for loop UUIDs during transformation
+2. **Generate unique flags**: Each for loop gets `__tacopy_returned_in_for_<UUID>`
+3. **Transform returns differently**: Inside a for loop, use `break` + set flag, not `continue`
+4. **Insert flag checks**: After each for loop, check flag and propagate upward
+5. **Handle arbitrary nesting**: The solution must work for any depth of nested for loops
+
+**Why this works:**
+
+- The `break` statement exits only the current for loop
+- The flag check after each loop propagates the "returned" state upward
+- At the top level (directly inside while True), the flag check triggers `continue`
+- This ensures the while True loop restarts, implementing the tail call correctly
+
+**While Loop Support:**
+
+While loops have the exact same issue and solution as for loops:
+
+```python
+def countdown(n: int) -> int:
+    if n <= 0:
+        return 0
+    while n > 0:
+        return countdown(n - 1)  # Tail call in while loop
+    return 0
+```
+
+**Correct transformation:**
+```python
+def countdown(n: int) -> int:
+    _tacopy_UUID1_n = n
+    while True:
+        if _tacopy_UUID1_n <= 0:
+            return 0
+        __tacopy_returned_in_while_UUID2 = False
+        while _tacopy_UUID1_n > 0:
+            (_tacopy_UUID1_n,) = (_tacopy_UUID1_n - 1,)
+            __tacopy_returned_in_while_UUID2 = True
+            break
+        if __tacopy_returned_in_while_UUID2:
+            continue
+        return 0
+```
+
+The implementation uses a single `loop_stack` that tracks both for and while loops, enabling proper handling of:
+- Nested while loops
+- For loops inside while loops
+- While loops inside for loops
+- Complex interleaved nesting (for → while → for)
+
+**Edge cases handled:**
+
+- ✅ Multiple for/while loops at the same level (siblings, not nested)
+- ✅ For/while loops with else clauses
+- ✅ Loops containing both tail calls and non-tail returns
+- ✅ Arbitrary interleaving of for and while loops
+
 #### Decorator Removal
 
 **Problem:** `@tacopy` on transformed code causes infinite recursion
@@ -402,6 +544,7 @@ return optimized function
 | Validation | Conservative AST visitor | False negatives ok, false positives dangerous |
 | Transformation | Multi-phase NodeTransformer | Clean separation, returnable node lists |
 | Parameter Updates | Tuple assignment | Atomic, prevents dependency issues |
+| Loop Handling | UUID-based flags + break/propagate | `continue` only affects innermost loop; flags propagate to while True |
 | Async Functions | Rejected | Concurrent execution state issues |
 | Nested Functions | Rejected | inspect.getsource() limitation, unreliable extraction |
 | Testing | 3-layer + snapshots | Unit, integration, regression coverage |
