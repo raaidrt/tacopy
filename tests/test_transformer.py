@@ -158,6 +158,7 @@ def factorial(n: int, acc: int = 1) -> int:
     import re
 
     code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    code = re.sub(r"__tacopy_returned_in_for_[a-f0-9]{8}", "__tacopy_returned_in_for_UUID", code)
 
     assert code == snapshot
 
@@ -180,6 +181,7 @@ def fibonacci_tail(n: int, a: int = 0, b: int = 1) -> int:
     import re
 
     code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    code = re.sub(r"__tacopy_returned_in_for_[a-f0-9]{8}", "__tacopy_returned_in_for_UUID", code)
 
     assert code == snapshot
 
@@ -200,6 +202,7 @@ def factorial_mod_k(acc: int, n: int, k: int) -> int:
     import re
 
     code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    code = re.sub(r"__tacopy_returned_in_for_[a-f0-9]{8}", "__tacopy_returned_in_for_UUID", code)
 
     assert code == snapshot
 
@@ -222,6 +225,7 @@ def list_reverse_recursive(lst, acc=None):
     import re
 
     code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    code = re.sub(r"__tacopy_returned_in_for_[a-f0-9]{8}", "__tacopy_returned_in_for_UUID", code)
 
     assert code == snapshot
 
@@ -244,5 +248,102 @@ def build_tuple_recursive(n: int, acc=None):
     import re
 
     code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    code = re.sub(r"__tacopy_returned_in_for_[a-f0-9]{8}", "__tacopy_returned_in_for_UUID", code)
+
+    assert code == snapshot
+
+
+def test_snapshot_tail_call_in_for_loop(snapshot):
+    """Snapshot test for tail call inside a for loop."""
+    source = """
+def tailing(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(3):
+        return tailing(n - 1)
+    return 0
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "tailing")
+    code = unparse(transformed)
+
+    # Replace UUIDs for consistent snapshots
+    import re
+
+    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    code = re.sub(r"__tacopy_returned_in_for_[a-f0-9]{8}", "__tacopy_returned_in_for_UUID", code)
+
+    assert code == snapshot
+
+
+def test_snapshot_tail_call_in_nested_for_loops(snapshot):
+    """Snapshot test for tail call inside nested for loops."""
+    source = """
+def nested_loops(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(3):
+        for j in range(2):
+            return nested_loops(n - 1)
+    return 0
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "nested_loops")
+    code = unparse(transformed)
+
+    # Replace UUIDs for consistent snapshots
+    import re
+
+    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    code = re.sub(r"__tacopy_returned_in_for_[a-f0-9]{8}", "__tacopy_returned_in_for_UUID", code)
+
+    assert code == snapshot
+
+
+def test_snapshot_tail_call_in_for_with_conditional(snapshot):
+    """Snapshot test for tail call inside a for loop with conditional."""
+    source = """
+def loop_with_cond(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(5):
+        if i % 2 == 0:
+            return loop_with_cond(n - 1)
+    return 1
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "loop_with_cond")
+    code = unparse(transformed)
+
+    # Replace UUIDs for consistent snapshots
+    import re
+
+    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    code = re.sub(r"__tacopy_returned_in_for_[a-f0-9]{8}", "__tacopy_returned_in_for_UUID", code)
+
+    assert code == snapshot
+
+
+def test_snapshot_tail_call_in_triple_nested_for_loops(snapshot):
+    """Snapshot test for tail call inside triple nested for loops."""
+    source = """
+def triple_nested(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                return triple_nested(n - 1)
+    return 0
+"""
+    tree = ast.parse(source)
+    transformed = transform_function(tree, "triple_nested")
+    code = unparse(transformed)
+
+    # Replace UUIDs for consistent snapshots
+    import re
+
+    code = re.sub(r"_tacopy_[a-f0-9]{8}_", "_tacopy_UUID_", code)
+    code = re.sub(r"__tacopy_returned_in_for_[a-f0-9]{8}", "__tacopy_returned_in_for_UUID", code)
 
     assert code == snapshot

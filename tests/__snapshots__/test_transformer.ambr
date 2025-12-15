@@ -53,6 +53,90 @@
           continue
   '''
 # ---
+# name: test_snapshot_tail_call_in_for_loop
+  '''
+  def tailing(n: int) -> int:
+      _tacopy_UUID_n = n
+      while True:
+          if _tacopy_UUID_n <= 0:
+              return 0
+          __tacopy_returned_in_for_UUID = False
+          for i in range(3):
+              (_tacopy_UUID_n,) = (_tacopy_UUID_n - 1,)
+              __tacopy_returned_in_for_UUID = True
+              break
+          if __tacopy_returned_in_for_UUID:
+              continue
+          return 0
+  '''
+# ---
+# name: test_snapshot_tail_call_in_for_with_conditional
+  '''
+  def loop_with_cond(n: int) -> int:
+      _tacopy_UUID_n = n
+      while True:
+          if _tacopy_UUID_n <= 0:
+              return 0
+          __tacopy_returned_in_for_UUID = False
+          for i in range(5):
+              if i % 2 == 0:
+                  (_tacopy_UUID_n,) = (_tacopy_UUID_n - 1,)
+                  __tacopy_returned_in_for_UUID = True
+                  break
+          if __tacopy_returned_in_for_UUID:
+              continue
+          return 1
+  '''
+# ---
+# name: test_snapshot_tail_call_in_nested_for_loops
+  '''
+  def nested_loops(n: int) -> int:
+      _tacopy_UUID_n = n
+      while True:
+          if _tacopy_UUID_n <= 0:
+              return 0
+          __tacopy_returned_in_for_UUID = False
+          for i in range(3):
+              __tacopy_returned_in_for_UUID = False
+              for j in range(2):
+                  (_tacopy_UUID_n,) = (_tacopy_UUID_n - 1,)
+                  __tacopy_returned_in_for_UUID = True
+                  break
+              if __tacopy_returned_in_for_UUID:
+                  __tacopy_returned_in_for_UUID = True
+                  break
+          if __tacopy_returned_in_for_UUID:
+              continue
+          return 0
+  '''
+# ---
+# name: test_snapshot_tail_call_in_triple_nested_for_loops
+  '''
+  def triple_nested(n: int) -> int:
+      _tacopy_UUID_n = n
+      while True:
+          if _tacopy_UUID_n <= 0:
+              return 0
+          __tacopy_returned_in_for_UUID = False
+          for i in range(2):
+              __tacopy_returned_in_for_UUID = False
+              for j in range(2):
+                  __tacopy_returned_in_for_UUID = False
+                  for k in range(2):
+                      (_tacopy_UUID_n,) = (_tacopy_UUID_n - 1,)
+                      __tacopy_returned_in_for_UUID = True
+                      break
+                  if __tacopy_returned_in_for_UUID:
+                      __tacopy_returned_in_for_UUID = True
+                      break
+              if __tacopy_returned_in_for_UUID:
+                  __tacopy_returned_in_for_UUID = True
+                  break
+          if __tacopy_returned_in_for_UUID:
+              continue
+          return 0
+  '''
+# ---
 # name: test_snapshot_tuple_builder_with_parameter_assignment
   '''
   def build_tuple_recursive(n: int, acc=None):

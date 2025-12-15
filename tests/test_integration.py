@@ -129,6 +129,63 @@ def mixed_factorial(n: int, acc: int = 1) -> int:
     return mixed_factorial(n - 1, acc=acc * n)
 
 
+# Tail call in for loop
+@tacopy
+def tailing(n: int) -> int:
+    if n <= 0:
+        return 0
+    for _i in range(3):
+        return tailing(n - 1)
+    return 0
+
+
+# Nested for loops
+@tacopy
+def nested_loops(n: int) -> int:
+    if n <= 0:
+        return 0
+    for _i in range(3):
+        for _j in range(2):
+            return nested_loops(n - 1)
+    return 0
+
+
+# Triple nested for loops
+@tacopy
+def triple_nested_loops(n: int) -> int:
+    if n <= 0:
+        return 0
+    for _i in range(2):
+        for _j in range(2):
+            for _k in range(2):
+                return triple_nested_loops(n - 1)
+    return 0
+
+
+# For loop with conditional
+@tacopy
+def loop_with_cond(n: int, acc: int = 0) -> int:
+    if n <= 0:
+        return acc
+    for i in range(5):
+        if i % 2 == 0:
+            return loop_with_cond(n - 1, acc + i)
+    return acc
+
+
+# For loop with multiple tail calls
+@tacopy
+def loop_multi_tail(n: int) -> int:
+    if n <= 0:
+        return 0
+    for i in range(3):
+        if i == 0:
+            return loop_multi_tail(n - 1)
+        elif i == 1:
+            return loop_multi_tail(n - 2)
+    return 1
+
+
 # ============================================================================
 # Test functions
 # ============================================================================
@@ -265,3 +322,52 @@ def test_keyword_arguments():
 def test_mixed_args_and_kwargs():
     """Test functions using both positional and keyword arguments in recursion."""
     assert mixed_factorial(5) == 120
+
+
+def test_tail_call_in_for_loop():
+    """Test tail call inside a for loop."""
+    # This should execute the first iteration of the for loop only,
+    # then tail-recurse and start over
+    assert tailing(0) == 0
+    assert tailing(1) == 0
+    assert tailing(2) == 0
+    assert tailing(10) == 0  # Should handle deeper recursion
+
+
+def test_nested_for_loops():
+    """Test tail call inside nested for loops."""
+    # Should execute outer loop i=0, inner loop j=0, then tail-recurse
+    assert nested_loops(0) == 0
+    assert nested_loops(1) == 0
+    assert nested_loops(5) == 0
+
+
+def test_triple_nested_for_loops():
+    """Test tail call inside triple nested for loops."""
+    # Should execute all outer loops once each, then tail-recurse
+    assert triple_nested_loops(0) == 0
+    assert triple_nested_loops(1) == 0
+    assert triple_nested_loops(5) == 0
+
+
+def test_for_loop_with_conditional():
+    """Test tail call inside a for loop with conditional."""
+    # With i=0 (even), should tail-recurse with acc=0
+    assert loop_with_cond(0, 0) == 0
+    assert loop_with_cond(1, 0) == 0  # n=1: i=0, acc=0+0=0, recurse with n=0,acc=0
+    assert loop_with_cond(2, 0) == 0  # n=2: i=0, acc=0+0=0, recurse...
+
+
+def test_for_loop_with_multiple_tail_calls():
+    """Test for loop with multiple tail call branches."""
+    # With i=0, should tail-recurse with n-1
+    assert loop_multi_tail(0) == 0
+    assert loop_multi_tail(1) == 0
+    assert loop_multi_tail(2) == 0
+
+
+def test_tail_call_in_for_loop_large():
+    """Test that tail call in for loop can handle large recursion depth."""
+    # This would cause stack overflow without proper optimization
+    assert tailing(1000) == 0
+    assert nested_loops(500) == 0
